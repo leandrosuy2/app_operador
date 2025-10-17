@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .bg-light-danger { background-color:#FF4500; color:#721c24; }
+</style>
+
+<div class="container mt-4">
+  <h1 class="text-center">Negociação do Devedor</h1>
+
+  <!-- Totais -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="alert alert-success text-center">
+        <h5>
+          <i class="fas fa-check-circle"></i> Total Quitado
+          <span data-bs-toggle="tooltip" title="Valor total já pago.">
+            <i class="fas fa-info-circle text-muted"></i>
+          </span>
+        </h5>
+        <p><strong>R$ {{ total_quitado|floatformat:2 }}</strong></p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="alert alert-info text-center">
+        <h5>
+          <i class="fas fa-handshake"></i> Total Negociado
+          <span data-bs-toggle="tooltip" title="Valor que está em processo de negociação.">
+            <i class="fas fa-info-circle text-muted"></i>
+          </span>
+        </h5>
+        <p><strong>R$ {{ total_negociado|floatformat:2 }}</strong></p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="alert alert-warning text-center">
+        <h5>
+          <i class="fas fa-exclamation-triangle"></i> Total Pendente
+          <span data-bs-toggle="tooltip" title="Valor ainda não pago nem negociado.">
+            <i class="fas fa-info-circle text-muted"></i>
+          </span>
+        </h5>
+        <p><strong>R$ {{ total_pendente|floatformat:2 }}</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      var t = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      t.map(function(el){ return new bootstrap.Tooltip(el) });
+    });
+  </script>
+
+  {# ==================== ENTRADA ==================== #}
+  {% if titulos_entrada %}
+    <h2 class="text-center mt-4">Entrada</h2>
+    <table class="table table-striped table-bordered text-center table-sm" style="font-size:.9rem;">
+      <thead class="table-dark text-center">
+        <tr>
+          <th>Empresa</th>
+          <th>Devedor</th>
+          <th>Título</th>
+          <th>Valor</th>
+          <th>Vencimento</th>
+          <th>Status</th>
+          <th>Juros</th>
+          <th>Dias Atraso</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for titulo in titulos_entrada %}
+          <tr>
+            <td>{{ titulo.razao_social }}</td>
+            <td>{{ titulo.devedor_nome }}</td>
+            <td>{{ titulo.num_titulo }}</td>
+            <td>R$ {{ titulo.valor_recebido|floatformat:2 }}</td>
+            <td>{{ titulo.data_vencimento|date:"d/m/Y" }}</td>
+            <td>
+              {% if titulo.status_baixa == 0 %}
+                <span class="badge bg-warning text-dark">Pendente</span>
+              {% elif titulo.status_baixa == 2 %}
+                <span class="badge bg-success">Quitado</span>
+              {% elif titulo.status_baixa == 3 %}
+                <span class="badge bg-info text-dark">Negociado</span>
+              {% endif %}
+            </td>
+            <td>R$ {{ titulo.juros|floatformat:2 }}</td>
+            <td>{{ titulo.dias_atraso }}</td>
+            <td>
+              {% if titulo.status_baixa != 2 %}
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalQuitarEntrada{{ titulo.id }}">
+                  <i class="fas fa-check"></i> Quitar
+                </button>
+              {% else %}
+                <div id="acoes-{{ titulo.id }}" class="d-inline">
+                  <a href="{% url 'gerar_recibo' titulo.id %}" target="_blank" class="btn btn-sm btn-info">
+                    <i class="fas fa-file-pdf"></i> Gerar Recibo
+                  </a>
+                  {% if titulo.tem_comprovante %}
+                    <a id="ver-{{ titulo.id }}" href="{{ titulo.comprovante_url }}" target="_blank" class="btn btn-sm btn-outline-secondary ms-1">
+                      <i class="fas fa-paperclip"></i> Ver Comprovante
+                    </a>
+                  {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-1 btn-anexar" data-id="{{ titulo.id }}">
+                      <i class="fas fa-paperclip"></i> Anexar Comprovante
+                    </button>
+                    <input type="file" id="file-{{ titulo.id }}" class="d-none" accept="image/*,application/pdf">
+                  {% endif %}
+                </div>
+              {% endif %}
+            </td>
+          </tr>
+
+          {# Modal Quitar Entrada #}
+          <div class="modal fade" id="modalQuitarEntrada{{ titulo.id }}" tabindex="-1" aria-hidden="true" aria-labelledby="modalQuitarEntradaLabel{{ titulo.id }}">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <form method="POST" action="{% url 'quitar_parcela' titulo.id %}">
+                  {% csrf_token %}
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="modalQuitarEntradaLabel{{ titulo.id }}">Quitar Entrada</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p><strong>Título:</strong> {{ titulo.num_titulo }}</p>
+                    <p><strong>Valor a Quitar:</strong> R$ {{ titulo.valor_recebido|floatformat:2 }}</p>
+                    <p><strong>Vencimento:</strong> {{ titulo.data_vencimento|date:"d/m/Y" }}</p>
+                    <p><strong>Devedor:</strong> {{ titulo.devedor_nome }}</p>
+
+                    <div class="mb-3">
+                      <label for="valorRecebidoEntrada{{ titulo.id }}" class="form-label">Valor Recebido</label>
+                      <input type="number" step="0.01" class="form-control" id="valorRecebidoEntrada{{ titulo.id }}" name="valorRecebido" value="{{ titulo.valor_recebido|floatformat:2 }}" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="dataBaixaEntrada{{ titulo.id }}" class="form-label">Data de Baixa</label>
+                      <input type="date" class="form-control" id="dataBaixaEntrada{{ titulo.id }}" name="dataBaixa" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="formaPagamentoEntrada{{ titulo.id }}" class="form-label">Forma de Pagamento</label>
+                      <select class="form-select" id="formaPagamentoEntrada{{ titulo.id }}" name="formaPagamento" required>
+                        <option value="0">Pix</option>
+                        <option value="1">Dinheiro</option>
+                        <option value="2">Cartão de Débito</option>
+                        <option value="3">Cartão de Crédito</option>
+                        <option value="4">Cheque</option>
+                        <option value="5">Depósito em Conta</option>
+                        <option value="6">Pagamento na Loja</option>
+                        <option value="7">Boleto Bancário</option>
+                        <option value="8">Duplicata</option>
+                        <option value="9">Recebimento pelo credor</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Quitação</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {# ==================== TÍTULOS ASSOCIADOS ==================== #}
+  <h2 class="text-center mt-4">Títulos Associados</h2>
+  <table class="table table-striped table-bordered text-center table-sm" style="font-size:.9rem;">
+    <thead class="table-dark text-center">
+      <tr>
+        <th>Empresa</th>
+        <th>Devedor</th>
+        <th>Título</th>
+        <th>Valor Recebido</th>
+        <th>Total & Parcela</th>
+        <th>Forma de Pagamento</th>
+        <th>Vencimento</th>
+        <th>Data de Baixa</th>
+        <th>Juros</th>
+        <th>Total com juros</th>
+        <th>Dias atraso</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if titulos %}
+        {% for titulo in titulos %}
+          {% if titulo.id not in entrada_ids %}
+            <tr style="{% if titulo.status_baixa == 3 and titulo.data_vencimento < today %}background-color:#FFA500;color:#000;{% endif %}">
+              <td>{{ titulo.razao_social }}</td>
+              <td>{{ titulo.devedor_nome }}</td>
+              <td>{{ titulo.num_titulo }}</td>
+              <td>R$ {{ titulo.valor_recebido|floatformat:2 }}</td>
+              <td>R$ {{ titulo.valor|floatformat:2 }}</td>
+              <td>{{ titulo.forma_pagamento }}</td>
+              <td>
+                {% if titulo.data_vencimento %}{{ titulo.data_vencimento|date:"d/m/Y" }}{% else %}-{% endif %}
+              </td>
+              <td>
+                {% if titulo.data_baixa %}{{ titulo.data_baixa|date:"d/m/Y" }}{% else %}-{% endif %}
+              </td>
+              <td>{{ titulo.juros|floatformat:2 }}</td>
+              <td>{{ titulo.valor_com_juros|floatformat:2 }}</td>
+              <td>{{ titulo.dias_atraso }}</td>
+              <td>
+                {% if titulo.status_baixa == 0 %}
+                  <span class="badge bg-warning text-dark">Pendente</span>
+                {% elif titulo.status_baixa == 2 %}
+                  <span class="badge bg-success">Quitado</span>
+                {% elif titulo.status_baixa == 3 %}
+                  <span class="badge bg-info text-dark">Negociado</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if titulo.status_baixa == 3 %}
+                  <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalQuitar{{ titulo.id }}">
+                    <i class="fas fa-check"></i> Quitar
+                  </button>
+                  <a href="{% url 'editar_titulo' titulo.id %}" class="btn btn-warning">Editar</a>
+                {% endif %}
+
+                {% if titulo.status_baixa == 2 %}
+                  <div id="acoes-{{ titulo.id }}" class="d-inline">
+                    <a href="{% url 'gerar_recibo' titulo.id %}" target="_blank" class="btn btn-sm btn-info">
+                      <i class="fas fa-file-pdf"></i> Gerar Recibo
+                    </a>
+                    {% if titulo.tem_comprovante %}
+                      <a id="ver-{{ titulo.id }}" href="{{ titulo.comprovante_url }}" target="_blank" class="btn btn-sm btn-outline-secondary ms-1">
+                        <i class="fas fa-paperclip"></i> Ver Comprovante
+                      </a>
+                    {% else %}
+                      <button type="button" class="btn btn-sm btn-outline-secondary ms-1 btn-anexar" data-id="{{ titulo.id }}">
+                        <i class="fas fa-paperclip"></i> Anexar Comprovante
+                      </button>
+                      <input type="file" id="file-{{ titulo.id }}" class="d-none" accept="image/*,application/pdf">
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                {% if titulo.status_baixa == 0 or titulo.status_baixa is none %}
+                  <a href="{% url 'realizar_acordo' titulo.id %}" class="btn btn-sm btn-success">
+                    <i class="fas fa-handshake"></i> Gerar Acordo
+                  </a>
+                  <a href="{% url 'realizar_baixa' titulo.id %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-download"></i> Baixar
+                  </a>
+                  <a href="{% url 'editar_titulo' titulo.id %}" class="btn btn-warning">Editar</a>
+                {% endif %}
+              </td>
+            </tr>
+
+            {# Modal Quitar (títulos) #}
+            <div class="modal fade" id="modalQuitar{{ titulo.id }}" tabindex="-1" aria-hidden="true" aria-labelledby="modalQuitarLabel{{ titulo.id }}">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form method="POST" action="{% url 'quitar_parcela' titulo.id %}" onsubmit="return validarValorRecebido({{ titulo.id }}, {{ titulo.valor|floatformat:2 }});">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="modalQuitarLabel{{ titulo.id }}">Quitar Parcela</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p><strong>Título:</strong> {{ titulo.num_titulo }}</p>
+                      <p><strong>Valor a Quitar:</strong> R$ {{ titulo.valor|floatformat:2 }}</p>
+                      <p><strong>Vencimento:</strong> {{ titulo.data_vencimento|date:"d/m/Y" }}</p>
+                      <p><strong>Devedor:</strong> {{ titulo.devedor_nome }}</p>
+
+                      <div class="mb-3">
+                        <label for="valorRecebido{{ titulo.id }}" class="form-label">Valor Recebido</label>
+                        <input type="number" step="0.01" class="form-control" id="valorRecebido{{ titulo.id }}" name="valorRecebido" value="{{ titulo.valor|floatformat:2 }}" required>
+                        <div id="erroValorRecebido{{ titulo.id }}" class="text-danger mt-2" style="display:none;">O valor recebido não pode ser menor que o valor total do título.</div>
+                      </div>
+                      <div class="mb-3">
+                        <label for="dataBaixa{{ titulo.id }}" class="form-label">Data de Baixa</label>
+                        <input type="date" class="form-control" id="dataBaixa{{ titulo.id }}" name="dataBaixa" required>
+                      </div>
+                      <div class="mb-3">
+                        <label for="formaPagamento{{ titulo.id }}" class="form-label">Forma de Pagamento</label>
+                        <select class="form-select" id="formaPagamento{{ titulo.id }}" name="formaPagamento" required>
+                          <option value="0">Pix</option>
+                          <option value="1">Dinheiro</option>
+                          <option value="2">Cartão de Débito</option>
+                          <option value="3">Cartão de Crédito</option>
+                          <option value="4">Cheque</option>
+                          <option value="5">Depósito em Conta</option>
+                          <option value="6">Pagamento na Loja</option>
+                          <option value="7">Boleto Bancário</option>
+                          <option value="8">Duplicata</option>
+                          <option value="9">Recebimento pelo credor</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-primary">Confirmar Quitação</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <script>
+              function validarValorRecebido(tituloId, valorMinimo){
+                const input = document.getElementById(`valorRecebido${tituloId}`);
+                const erro  = document.getElementById(`erroValorRecebido${tituloId}`);
+                if(parseFloat(input.value) < valorMinimo){
+                  erro.style.display = 'block';
+                  return false;
+                }
+                erro.style.display = 'none';
+                return true;
+              }
+            </script>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="13">Nenhum título encontrado para esta empresa.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  {# ==================== JS (AJAX de comprovante) ==================== #}
+  <script>
+    function getCookie(name){
+      const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+      return m ? m.pop() : '';
+    }
+
+    // Abre seletor de arquivo ao clicar no botão "Anexar Comprovante"
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.btn-anexar');
+      if(!btn) return;
+      const id = btn.dataset.id;
+      const input = document.getElementById('file-' + id);
+      if(input) input.click();
+    });
+
+    // Upload via fetch; ao concluir, troca por "Ver Comprovante"
+    document.addEventListener('change', async (e)=>{
+      const input = e.target;
+      if(!(input.matches('input[type="file"][id^="file-"]'))) return;
+
+      const file = input.files[0];
+      if(!file) return;
+      const id = input.id.replace('file-','');
+
+      const fd = new FormData();
+      fd.append('comprovante', file);
+
+      let data;
+      try {
+        const resp = await fetch(`/titulos/${id}/comprovante/`, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: fd
+        });
+        data = await resp.json();
+      } catch (err){
+        alert('Erro ao enviar o comprovante.');
+        console.error(err);
+        input.value = '';
+        return;
+      }
+
+      if(data.ok){
+        const wrap = document.getElementById('acoes-' + id);
+        if(wrap){
+          wrap.innerHTML = `
+            <a href="{% url 'gerar_recibo' 0 %}".replace('/0/','/${id}/') target="_blank" class="btn btn-sm btn-info">
+              <i class="fas fa-file-pdf"></i> Gerar Recibo
+            </a>
+            <a href="${data.url}" target="_blank" class="btn btn-sm btn-outline-secondary ms-1">
+              <i class="fas ${file.type==='application/pdf' ? 'fa-file-pdf' : 'fa-paperclip'}"></i> Ver Comprovante
+            </a>`;
+        }
+      } else {
+        alert(data.error || 'Falha ao anexar o comprovante.');
+      }
+      input.value = '';
+    });
+  </script>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{# templates/titulo_anexos.html #}
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h4>Comprovantes — Título #{{ titulo.id }}</h4>
+  {% if anexos %}
+    <ul class="list-group">
+      {% for a in anexos %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>
+            {{ a.arquivo.name|default:a.file.name|default:"arquivo" }}
+            <small class="text-muted">—
+              {% if a.uploaded_at %}{{ a.uploaded_at|date:"d/m/Y H:i" }}
+              {% elif a.created_at %}{{ a.created_at|date:"d/m/Y H:i" }}
+              {% elif a.data %}{{ a.data|date:"d/m/Y H:i" }}
+              {% else %}sem data{% endif %}
+            </small>
+          </span>
+          <span class="d-flex gap-2">
+            <a class="btn btn-sm btn-outline-primary" href="{{ a.arquivo.url|default:a.file.url }}" target="_blank" rel="noopener">Abrir</a>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ a.arquivo.url|default:a.file.url }}" download>Baixar</a>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="alert alert-warning mt-3 mb-0">Nenhum comprovante anexado.</div>
+  {% endif %}
+</div>
+{% endblock %}

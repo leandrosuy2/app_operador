@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<div class="container mt-5">
+    <h3 class="text-center mb-4 fw-bold" style="font-size: 22px; color: #3498db; text-transform: uppercase; letter-spacing: 1px;">
+    <i class="fas fa-file-contract me-2" style="color: #2980b9;"></i> Lista de Títulos / Acordos
+</h3>
+
+
+    <!-- Formulário de pesquisa -->
+    <form method="get" action="{% url 'acordos_listar' %}" class="mb-3 d-flex gap-2" style="font-size: 12px;">
+        <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm" placeholder="Pesquisar por devedor, empresa, CPF, CNPJ, etc.">
+        <button type="submit" class="btn btn-sm btn-primary" style="font-size: 12px;">Pesquisar</button>
+    </form>
+
+    <!-- Tabela de Títulos -->
+    <table class="table table-striped table-bordered text-center table-sm" style="font-size: 0.9rem;">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Devedor</th>
+                <th>CPF / CNPJ</th>
+                <th>Empresa</th>
+                <th>Valor Recebido</th>
+                <th>Data Baixa</th>
+                <th>Parcelas</th>
+                <th>Total do Acordo</th>
+                <th>1ª Parcela</th>
+                <th>Contato</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for titulo in page_obj %}
+            <tr>
+                <td>{{ titulo.titulo_id }}</td>
+                <td>{{ titulo.devedor_nome }}</td>
+                <td>{{ titulo.cpf|default_if_none:titulo.cnpj }}</td>
+                <td>{{ titulo.empresa_nome }}</td>
+                <td>R$ {{ titulo.valorRecebido|floatformat:2 }}</td>
+                <td>{{ titulo.data_baixa|default:"-" }}</td>
+                <td>{{ titulo.qtde_parcelas|default:"-" }}</td>
+                <td>R$ {{ titulo.total_acordo|floatformat:2 }}</td>
+                <td>{{ titulo.dataVencimentoPrimeira|default:"-" }}</td>
+                <td>{{ titulo.contato }}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="toggleParcelas({{ titulo.titulo_id }})">
+                        Ver Parcelas
+                    </button>
+                    <a href="{% url 'gerar_contrato' titulo.titulo_id %}" class="btn btn-sm btn-success" target="_blank">
+                        Gerar Contrato
+                    </a>
+                </td>
+            </tr>
+            <tr id="parcelas-{{ titulo.titulo_id }}" class="d-none">
+                <td colspan="11">
+                    <h6 style="font-size: 12px;">Parcelas</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Valor</th>
+                                <th>Data de Vencimento</th>
+                                <th>Data de Pagamento</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for parcela in titulo.parcelas %}
+                            <tr style="{% if parcela.status == 'Quitado' %}background-color: #98fb98;{% endif %}">
+                                <td>{{ parcela.id }}</td>
+                                <td>R$ {{ parcela.valor|floatformat:2 }}</td>
+                                <td>{{ parcela.data_vencimento }}</td>
+                                <td>{{ parcela.data_baixa|default:"-" }}</td>
+                                <td>
+									{% if parcela.status_baixa == 1 %}
+										Pendente
+									{% elif parcela.status_baixa == 2 %}
+										Quitado
+									{% elif parcela.status_baixa == 3 %}
+										Negociado
+									{% elif parcela.status_baixa == 0 or parcela.status_baixa is None %}
+										Pendente
+									{% else %}
+										Outro
+									{% endif %}
+								</td>
+                                <td>
+									{% if parcela.status_baixa == 2 %}
+										<a href="{% url 'gerar_recibo' parcela.id %}" class="btn btn-sm btn-secondary" target="_blank">
+											Recibo
+										</a>
+										
+										{% if parcela.comprovante %}
+											<a href="{{ parcela.comprovante.url }}" class="btn btn-sm btn-info" target="_blank">
+												Baixar Comprovante
+											</a>
+											<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnexarComprovante{{ parcela.id }}">
+												Alterar Comprovante
+											</button>
+										{% else %}
+											<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnexarComprovante{{ parcela.id }}">
+												Anexar Comprovante
+											</button>
+										{% endif %}
+									{% endif %}
+									{% if parcela.status_baixa == 2 or parcela.status_baixa == 3%}
+												{% if titulo.titulo_id %}
+												<!-- Botão para acionar o modal -->
+											<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnexarContrato{{ titulo.titulo_id }}">
+												Anexar Contrato
+											</button>
+											{% else %}
+												<p>Erro: ID do título não disponível para anexar contrato.</p>
+											{% endif %}
+
+
+										
+										{% if titulo.contrato %}
+											<a href="{% url 'baixar_contrato' titulo.titulo_id %}" class="btn btn-sm btn-secondary" target="_blank">
+												Baixar Contrato
+											</a>
+										{% endif %}
+																		
+									{% endif %}
+									
+								</td>
+
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="11" class="text-center">Nenhum título encontrado.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Modal para Anexar Comprovante -->
+    {% for titulo in page_obj %}
+        {% for parcela in titulo.parcelas %}
+            {% if parcela.id %}
+                <div class="modal fade" id="modalAnexarComprovante{{ parcela.id }}" tabindex="-1" aria-labelledby="modalLabelAnexarComprovante{{ parcela.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="modalLabelAnexarComprovante{{ parcela.id }}">
+                                    {% if parcela.comprovante %} Alterar {% else %} Anexar {% endif %} Comprovante
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form method="POST" action="{% url 'anexar_comprovante' parcela.id %}" enctype="multipart/form-data">
+
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label for="comprovante-{{ parcela.id }}" class="form-label">Selecione o Comprovante</label>
+                                        <input type="file" class="form-control" id="comprovante-{{ parcela.id }}" name="comprovante" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        {% if parcela.comprovante %} Alterar {% else %} Anexar {% endif %} Comprovante
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+	
+<!-- Modal para Anexar Contrato -->
+{% for titulo in page_obj %}
+    <div class="modal fade" id="modalAnexarContrato{{ titulo.titulo_id }}" tabindex="-1" aria-labelledby="modalLabelAnexarContrato{{ titulo.titulo_id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabelAnexarContrato{{ titulo.titulo_id }}">Anexar Contrato</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{% url 'anexar_contrato' titulo.titulo_id %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="contrato-{{ titulo.titulo_id }}" class="form-label">Selecione o Contrato</label>
+                            <input type="file" class="form-control" id="contrato-{{ titulo.titulo_id }}" name="contrato" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Anexar Contrato</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+
+	
+
+    <!-- Paginação -->
+    <div class="d-flex justify-content-between align-items-center mt-3" style="font-size: 12px;">
+        <div>
+            {% if page_obj.has_previous %}
+                <a href="?page=1" class="btn btn-sm btn-primary" style="font-size: 10px;">
+                    <i class="fas fa-angle-double-left"></i> Primeira
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-secondary" style="font-size: 10px;">
+                    <i class="fas fa-angle-left"></i> Anterior
+                </a>
+            {% endif %}
+        </div>
+        <div>
+            <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        </div>
+        <div>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-secondary" style="font-size: 10px;">
+                    Próxima <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-sm btn-primary" style="font-size: 10px;">
+                    Última <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleParcelas(tituloId) {
+        const row = document.getElementById(`parcelas-${tituloId}`);
+        row.classList.toggle('d-none');
+
+}
+
+</script>
+{% endblock %}

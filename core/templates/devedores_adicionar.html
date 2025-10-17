@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Adicionar Devedor</h1>
+    <form method="POST" class="row g-3">
+        {% csrf_token %}
+
+        <!-- Seleção de Empresa -->
+        <div class="col-md-6">
+            <label for="empresa_id" class="form-label">Empresa</label>
+            <select name="empresa_id" id="empresa_id" class="form-control" required>
+                {% for empresa in empresas %}
+                <option value="{{ empresa.id }}">
+                    {{ empresa.razao_social }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Tipo de Pessoa -->
+        <div class="col-md-6">
+            <label for="tipo_pessoa" class="form-label">Tipo de Pessoa</label>
+            <select name="tipo_pessoa" id="tipo_pessoa" class="form-control" required onchange="togglePessoaFields()">
+                <option value="F">Física</option>
+                <option value="J">Jurídica</option>
+            </select>
+        </div>
+
+        <!-- Nome -->
+        <div class="col-md-6 pessoa-fisica">
+            <label for="nome" class="form-label">Nome:</label>
+            <input type="text" name="nome" id="nome" class="form-control" value="">
+        </div>
+
+        <!-- CPF -->
+        <div class="col-md-6 pessoa-fisica">
+            <label for="cpf" class="form-label">CPF</label>
+            <input type="text" name="cpf" id="cpf" class="form-control" oninput="formatarCPF(this)" onblur="validarCPF()" maxlength="14">
+            <small id="cpfError" class="text-danger" style="display: none;">CPF inválido</small>
+        </div>
+
+        <!-- CNPJ -->
+        <div class="col-md-6 pessoa-juridica" style="display: none;">
+            <label for="cnpj" class="form-label">CNPJ</label>
+            <input type="text" name="cnpj" id="cnpj" class="form-control" oninput="formatarCNPJ(this)" onblur="validarCNPJ()" maxlength="18">
+            <small id="cnpjError" class="text-danger" style="display: none;">CNPJ inválido</small>
+        </div>
+
+        <!-- Razão Social -->
+        <div class="col-md-6 pessoa-juridica" style="display: none;">
+            <label for="razao_social" class="form-label">Razão Social</label>
+            <input type="text" name="razao_social" id="razao_social" class="form-control" value="">
+        </div>
+
+        <!-- Nome Fantasia -->
+        <div class="col-md-6 pessoa-juridica" style="display: none;">
+            <label for="nome_fantasia" class="form-label">Nome Fantasia</label>
+            <input type="text" name="nome_fantasia" id="nome_fantasia" class="form-control" value="">
+        </div>
+
+        <!-- Nome Sócio -->
+        <div class="col-md-6 pessoa-juridica" style="display: none;">
+            <label for="nome_socio" class="form-label">Nome Sócio</label>
+            <input type="text" name="nome_socio" id="nome_socio" class="form-control" value="">
+        </div>
+
+        <!-- CPF Sócio -->
+        <div class="col-md-6 pessoa-juridica" style="display: none;">
+            <label for="cpf_socio" class="form-label">CPF Sócio</label>
+            <input type="text" name="cpf_socio" id="cpf_socio" class="form-control" oninput="formatarCPF(this)" onblur="validarCPFSocio()" maxlength="14">
+            <small id="cpfSocioError" class="text-danger" style="display: none;">CPF Sócio inválido</small>
+        </div>
+
+        <!-- CEP -->
+        <div class="col-md-6">
+            <label for="cep" class="form-label">CEP</label>
+            <input type="text" name="cep" id="cep" class="form-control" onblur="buscarEndereco()" value="">
+        </div>
+
+        <!-- Endereço -->
+        <div class="col-md-6">
+            <label for="endereco" class="form-label">Endereço</label>
+            <input type="text" name="endereco" id="endereco" class="form-control" value="">
+        </div>
+
+        <!-- Bairro -->
+        <div class="col-md-6">
+            <label for="bairro" class="form-label">Bairro</label>
+            <input type="text" name="bairro" id="bairro" class="form-control" value="">
+        </div>
+
+        <!-- UF -->
+        <div class="col-md-6">
+            <label for="uf" class="form-label">UF</label>
+            <input type="text" name="uf" id="uf" class="form-control" value="">
+        </div>
+
+        <!-- Cidade -->
+        <div class="col-md-6">
+            <label for="cidade" class="form-label">Cidade</label>
+            <input type="text" name="cidade" id="cidade" class="form-control" value="">
+        </div>
+
+        <!-- Telefones -->
+        <div class="col-md-6">
+            <label for="telefone1" class="form-label">Telefone 1</label>
+            <input type="text" name="telefone1" id="telefone1" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone2" class="form-label">Telefone 2</label>
+            <input type="text" name="telefone2" id="telefone2" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone3" class="form-label">Telefone 3</label>
+            <input type="text" name="telefone3" id="telefone3" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone4" class="form-label">Telefone 4</label>
+            <input type="text" name="telefone4" id="telefone4" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone5" class="form-label">Telefone 5</label>
+            <input type="text" name="telefone5" id="telefone5" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone6" class="form-label">Telefone 6</label>
+            <input type="text" name="telefone6" id="telefone6" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone7" class="form-label">Telefone 7</label>
+            <input type="text" name="telefone7" id="telefone7" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone8" class="form-label">Telefone 8</label>
+            <input type="text" name="telefone8" id="telefone8" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone9" class="form-label">Telefone 9</label>
+            <input type="text" name="telefone9" id="telefone9" class="form-control" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="telefone10" class="form-label">Telefone 10</label>
+            <input type="text" name="telefone10" id="telefone10" class="form-control" value="">
+        </div>
+
+        <!-- Observação -->
+        <div class="col-md-12">
+            <label for="observacao" class="form-label">Observação</label>
+            <textarea name="observacao" id="observacao" class="form-control"></textarea>
+        </div>
+
+        <!-- Botão de salvar -->
+        <div class="col-12 text-center">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript -->
+<script>
+    function buscarEndereco() {
+        const cep = document.getElementById('cep').value.replace(/\D/g, '');
+
+        if (cep.length === 8) {
+            fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        document.getElementById('endereco').value = data.logradouro || '';
+                        document.getElementById('bairro').value = data.bairro || '';
+                        document.getElementById('uf').value = data.uf || '';
+                        document.getElementById('cidade').value = data.localidade || '';
+                    } else {
+                        alert('CEP não encontrado.');
+                    }
+                })
+                .catch(() => alert('Erro ao buscar o CEP. Tente novamente.'));
+        } else {
+            alert('CEP inválido. Certifique-se de que tenha 8 dígitos.');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', togglePessoaFields);
+</script>
+<!-- JavaScript -->
+<script>
+    function togglePessoaFields() {
+        const tipoPessoa = document.getElementById('tipo_pessoa').value;
+        const pessoaFisicaFields = document.querySelectorAll('.pessoa-fisica');
+        const pessoaJuridicaFields = document.querySelectorAll('.pessoa-juridica');
+
+        if (tipoPessoa === 'F') {
+            pessoaFisicaFields.forEach(field => field.style.display = 'block');
+            pessoaJuridicaFields.forEach(field => field.style.display = 'none');
+        } else {
+            pessoaFisicaFields.forEach(field => field.style.display = 'none');
+            pessoaJuridicaFields.forEach(field => field.style.display = 'block');
+        }
+        verificarCampos();
+    }
+
+    function validarCPF() {
+        const cpf = document.getElementById('cpf').value.replace(/\D/g, '');
+        const cpfError = document.getElementById('cpfError');
+
+        // Só valida se o campo não estiver vazio
+        if (cpf.length === 0) {
+            cpfError.style.display = 'none';
+            verificarCampos();
+            return true; // Considera válido se vazio
+        }
+
+        if (cpf.length !== 11 || !calculaCPF(cpf)) {
+            cpfError.style.display = 'block';
+            return false;
+        } else {
+            cpfError.style.display = 'none';
+            verificarCampos();
+            return true;
+        }
+    }
+
+    function validarCNPJ() {
+        const cnpj = document.getElementById('cnpj').value.replace(/\D/g, '');
+        const cnpjError = document.getElementById('cnpjError');
+
+        // Só valida se o campo não estiver vazio
+        if (cnpj.length === 0) {
+            cnpjError.style.display = 'none';
+            verificarCampos();
+            return true; // Considera válido se vazio
+        }
+
+        if (cnpj.length !== 14 || !calculaCNPJ(cnpj)) {
+            cnpjError.style.display = 'block';
+            return false;
+        } else {
+            cnpjError.style.display = 'none';
+            verificarCampos();
+            return true;
+        }
+    }
+
+    function validarCPFSocio() {
+        const cpfSocio = document.getElementById('cpf_socio').value.replace(/\D/g, '');
+        const cpfSocioError = document.getElementById('cpfSocioError');
+
+        // Só valida se o campo não estiver vazio
+        if (cpfSocio.length === 0) {
+            cpfSocioError.style.display = 'none';
+            verificarCampos();
+            return true; // Considera válido se vazio
+        }
+
+        if (cpfSocio.length !== 11 || !calculaCPF(cpfSocio)) {
+            cpfSocioError.style.display = 'block';
+            return false;
+        } else {
+            cpfSocioError.style.display = 'none';
+            verificarCampos();
+            return true;
+        }
+    }
+
+    function verificarCampos() {
+        const tipoPessoa = document.getElementById('tipo_pessoa').value;
+        const cpfValido = tipoPessoa === 'F' ? validarCPF() : true;
+        const cnpjValido = tipoPessoa === 'J' ? validarCNPJ() : true;
+        const cpfSocioValido = tipoPessoa === 'J' ? validarCPFSocio() : true;
+        // Não desabilite o botão se os campos estiverem vazios, apenas se forem inválidos e preenchidos
+    }
+
+    function validarFormulario() {
+        const tipoPessoa = document.getElementById('tipo_pessoa').value;
+        const cpfValido = tipoPessoa === 'F' ? validarCPF() : true;
+        const cnpjValido = tipoPessoa === 'J' ? validarCNPJ() : true;
+        const cpfSocioValido = tipoPessoa === 'J' ? validarCPFSocio() : true;
+
+        if (!cpfValido && !cnpjValido && !cpfSocioValido) {
+            alert("CPF, CNPJ ou CPF do Sócio inválido. Corrija antes de salvar.");
+            return false;
+        }
+        return true;
+    }
+
+    function calculaCPF(cpf) {
+        let soma = 0, resto;
+        if (/^(\d)\1+$/.test(cpf)) return false;
+
+        for (let i = 1; i <= 9; i++) soma += parseInt(cpf[i - 1]) * (11 - i);
+        resto = (soma * 10) % 11;
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf[9])) return false;
+
+        soma = 0;
+        for (let i = 1; i <= 10; i++) soma += parseInt(cpf[i - 1]) * (12 - i);
+        resto = (soma * 10) % 11;
+        return resto === parseInt(cpf[10]);
+    }
+
+    function calculaCNPJ(cnpj) {
+        let tamanho = cnpj.length - 2, numeros = cnpj.substring(0, tamanho), digitos = cnpj.substring(tamanho);
+        let soma = 0, pos = tamanho - 7;
+        for (let i = tamanho; i >= 1; i--) {
+            soma += numeros.charAt(tamanho - i) * pos--;
+            if (pos < 2) pos = 9;
+        }
+        let resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+        if (resultado !== parseInt(digitos.charAt(0))) return false;
+
+        tamanho++;
+        numeros = cnpj.substring(0, tamanho);
+        soma = 0;
+        pos = tamanho - 7;
+        for (let i = tamanho; i >= 1; i--) {
+            soma += numeros.charAt(tamanho - i) * pos--;
+            if (pos < 2) pos = 9;
+        }
+        resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+        return resultado === parseInt(digitos.charAt(1));
+    }
+
+    function formatarCPF(campo) {
+        let cpf = campo.value.replace(/\D/g, '');
+        if (cpf.length > 11) cpf = cpf.substring(0, 11);
+        campo.value = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, "$1.$2.$3-$4");
+    }
+
+    function formatarCNPJ(campo) {
+        let cnpj = campo.value.replace(/\D/g, '');
+        if (cnpj.length > 14) cnpj = cnpj.substring(0, 14);
+        campo.value = cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, "$1.$2.$3/$4-$5");
+    }
+
+    document.addEventListener('DOMContentLoaded', togglePessoaFields);
+</script>
+{% endblock %}

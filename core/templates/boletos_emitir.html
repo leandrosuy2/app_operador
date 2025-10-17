@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <h2 class="my-4 text-center">Boletos a emitir</h2>
+
+    {% if messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <ul class="mb-0">
+                {% for message in messages %}
+                    <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    <form method="post" id="emitirBoletoForm">
+        {% csrf_token %}
+        <input type="hidden" name="razao_social" id="razao_social">
+        <input type="hidden" name="dias_atraso" id="dias_atraso">
+        <input type="hidden" name="valor_recebido" id="valor_recebido">
+        <input type="hidden" name="comissao" id="comissao">
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover text-center align-middle" style="font-size: 0.7rem; table-layout: fixed; width: 100%;">
+                <thead class="table-dark">
+                    <tr>
+                        {% for header in headers %}
+                            <th style="white-space: normal; word-wrap: break-word; width: auto;">{{ header }}</th>
+                        {% endfor %}
+                        <th style="width: 10%">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in results %}
+                        <tr>
+                            {% for col in row %}
+                                <td style="white-space: normal; word-wrap: break-word;">{{ col }}</td>
+                            {% endfor %}
+                            <td>
+                                <button 
+                                    type="button" 
+                                    class="btn btn-success btn-sm emitirBoletoButton" 
+                                    data-razao-social="{{ row.razao_social }}"
+                                    data-dias-atraso="{{ row.dias_de_atraso }}" 
+                                    data-valor-recebido="{{ row.total_valorRecebido }}" 
+                                    data-comissao="{{ row.total_comissao_valor }}">
+                                    <i class="fas fa-file-invoice-dollar"></i> Emitir
+                                </button>
+                                {% if row.id_empresa %}
+                                    <a href="{% url 'baixar_boleto' row.id_empresa|slugify %}" class="btn btn-primary btn-sm" target="_blank">
+                                        <i class="fas fa-download"></i> Baixar
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".emitirBoletoButton").forEach(button => {
+            button.addEventListener("click", function () {
+                document.getElementById("razao_social").value = this.dataset.razaoSocial;
+                document.getElementById("dias_atraso").value = this.dataset.diasAtraso;
+                document.getElementById("valor_recebido").value = this.dataset.valorRecebido;
+                document.getElementById("comissao").value = this.dataset.comissao;
+                document.getElementById("emitirBoletoForm").submit();
+            });
+        });
+    });
+</script>
+{% endblock %}

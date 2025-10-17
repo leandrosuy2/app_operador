@@ -1,0 +1,293 @@
+{% block content %}
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADV Assessoria - {% block title %}Sistema de Cobrança{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+            margin-top: 20px;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #1e3a8a, #1abb9c);
+            border-bottom: 2px solid #1abb9c;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.8rem;
+            color: #ffffff;
+        }
+
+        .navbar-brand:hover {
+            color: #ffffff;
+            text-shadow: 0 0 10px #1abb9c;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .content-container {
+            padding: 20px 15px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .table td,
+        .table th {
+            vertical-align: middle;
+            font-size: 10pt;
+        }
+
+        .table {
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        .table-bordered {
+            border: 1px solid #ddd;
+        }
+
+        .table-bordered td, .table-bordered th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, #1e3a8a, #1abb9c);
+            color: #ffffff;
+            padding: 10px 0;
+            text-align: center;
+            margin-top: 40px;
+            box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        footer a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        footer a:hover {
+            text-shadow: 0 0 10px #ffffff;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .signature {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 10pt;
+        }
+
+        .signature p {
+            font-weight: bold;
+            font-size: 12pt;
+        }
+
+        .highlight {
+            background-color: #d1f7d1;
+        }
+
+        /* Ajustes para impressão */
+        @media print {
+            body {
+                margin: 0;
+                font-size: 10pt;
+                color: #000;
+                background-color: #fff;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 0;
+            }
+
+            .content-container {
+                box-shadow: none;
+                padding: 20px;
+                margin-top: 20px;
+            }
+
+            .table-bordered td, .table-bordered th {
+                border: 1px solid #ddd;
+                padding: 6px;
+                font-size: 9pt;
+            }
+
+            .footer, .navbar, .signature {
+                display: none; /* Ocultar rodapé e navbar na impressão */
+            }
+
+            .row {
+                display: block;
+            }
+
+            .col-md-6 {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .highlight {
+                background-color: transparent;
+            }
+
+            .text-right {
+                text-align: left !important;
+            }
+
+            p, h5, td {
+                page-break-inside: avoid;
+            }
+
+            .content-container {
+                max-height: 100%;
+                overflow: hidden;
+            }
+
+            .container {
+                margin-top: 20px;
+                margin-bottom: 20px;
+            }
+
+            .text-right {
+                font-size: 8pt;
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+
+            .signature {
+			display: block !important; /* Garante que a assinatura seja visível na impressão */
+			}
+
+            .signature p {
+                margin-bottom: 5px;
+            }
+
+            .table {
+                page-break-inside: avoid;
+            }
+        }
+		/* Ajuste para alinhamento à direita na impressão */
+@media print {
+    .text-right {
+        text-align: right !important;
+    }
+}
+
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="content-container">
+        <h5 class="text-center"><b>FICHA CADASTRAL SISTEMA DE COBRANÇA</b></h5>
+
+        <table class="table table-bordered">
+            <tr>
+                <td style="font-weight: bold;">Razão social:</td>
+                <td colspan="5">{{ empresa.razao_social }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">CNPJ:</td>
+                <td>{{ empresa.cnpj }}</td>
+                <td style="font-weight: bold;"  >INSC:</td>
+                <td colspan="3">2900000000</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Fantasia:</td>
+                <td colspan="5">{{ empresa.nome_fantasia }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Endereço:</td>
+                <td colspan="5">{{ empresa.endereco }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">CEP:</td>
+                <td>{{ empresa.cep }}</td>
+                <td style="font-weight: bold;">Cidade:</td>
+                <td>{{ empresa.cidade }}</td>
+                <td style="font-weight: bold;">UF:</td>
+                <td>{{ empresa.uf }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Fone/fax:</td>
+                <td>{{ empresa.telefone }}</td>
+                <td style="font-weight: bold;">E-mail:</td>
+                <td colspan="3">{{ empresa.email }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Contrada:</td>
+                <td>{{ empresa.contratante_nome }}</td>
+                <td style="font-weight: bold;">CPF:</td>
+                <td colspan="3">{{ empresa.contratante_cpf }}</td>
+            </tr>
+        </table>
+
+        <table class="table table-bordered highlight">
+            <tr>
+                <td style="font-weight: bold;">Valor Mensal do Sistema Cobrança:</td>
+                <td>R$ isento</td>
+                <td style="font-weight: bold;">Site:</td>
+                <td>www.advassessoria.com.br</td>
+            </tr>
+        </table>
+
+        <div class="row mt-4">
+            <!-- Coluna para Declaração -->
+            <div class="col-md-6 mb-3">
+                <div class="border p-3">
+                    <p><b>Declaro que estou ciente dos termos do presente contrato não havendo quaisquer dúvidas acerca da utilização do sistema e cláusulas aqui estabelecidas. Responsabilizo-me pela veracidade das informações cadastrais.</b></p>
+                </div>
+            </div>
+            
+            <!-- Coluna para Fidelidade -->
+            <div class="col-md-6 mb-3">
+                <div class="border p-3">
+                    <p><b>Fidelidade:</b> Os títulos deverão permanecer no sistema de cobrança por no mínimo (30) Trinta dias, para solicitação de cancelamento, após a data de inclusão. A exclusão neste período será considerada como baixa e aplicado o Percentual de Cobrança por Títulos.</p>
+                </div>
+            </div>
+        </div>
+
+        <p class="mt-3"><b>Obs.:</b> Os títulos lançados no sistema ADV Assessoria cobrança, terão uma carência de (3) três dias para solicitação de baixa sem custo, não havendo contato por telefone ou SMS.</p>
+
+        <p>
+            RECEBEMOS DA EMPRESA: A QUANTIA DE R$ {{ empresa.valor_adesao }} ({{empresa.valor_adesao_extenso}})
+
+
+
+            REFERENTE: HABILITAÇÃO DO SISTEMA DE COBRANÇA.
+        </p>
+
+        <p class="text-right mt-5">{{empresa.cidade}}-{{empresa.uf}}, {{ empresa.data_cadastro }}</p>
+
+        <div class="signature">
+            <p>_________________________</p>
+            <p>Contratante</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h3 class="text-center mb-4">Editar Empresa</h3>    
+	<form method="post" action="{% url 'editar_empresa' empresa.id %}" enctype="multipart/form-data">
+		
+        {% csrf_token %}
+			
+   
+    
+  
+    <div class="col-md-6 text-center">
+    <h2 id="status-text" class="fw-bold {% if empresa.status_empresa %}text-success{% else %}text-danger{% endif %}">
+        {% if empresa.status_empresa %}ATIVADA{% else %}DESATIVADA{% endif %}
+    </h2>
+
+    <button id="toggle-status" class="btn {% if empresa.status_empresa %}btn-danger{% else %}btn-success{% endif %}">
+        {% if empresa.status_empresa %}Desativar{% else %}Ativar{% endif %}
+    </button>
+	
+</div>
+<script>
+document.getElementById("toggle-status").addEventListener("click", function(event) {
+    event.preventDefault();  // Prevenir ação padrão do botão
+    let button = this;
+    let statusText = document.getElementById("status-text");
+    let newStatus = !(statusText.textContent.trim() === "ATIVADA");  // Determina o novo estado baseado no texto atual
+
+    // Enviar requisição AJAX para alterar o status
+    fetch("{% url 'alterar_status_empresa' empresa.id %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status_empresa: newStatus })  // Envia o novo estado como JSON
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Atualizar a interface dinamicamente com base no novo estado
+            if (data.status_empresa) {
+                statusText.textContent = "ATIVADA";
+                statusText.classList.remove("text-danger");
+                statusText.classList.add("text-success");
+                button.classList.remove("btn-success");
+                button.classList.add("btn-danger");
+                button.textContent = "Desativar";
+            } else {
+                statusText.textContent = "DESATIVADA";
+                statusText.classList.remove("text-success");
+                statusText.classList.add("text-danger");
+                button.classList.remove("btn-danger");
+                button.classList.add("btn-success");
+                button.textContent = "Ativar";
+            }
+        } else {
+            alert("Erro ao alterar o status.");
+        }
+    })
+    .catch(error => console.error("Erro:", error));
+});
+</script>
+
+
+
+		<!-- Logo -->
+            <div class="col-md-12 text-center">
+                {% if empresa.logo %}
+                     <img src="{{ empresa.logo.url }}" alt="Logo da Empresa" width="500" />
+                {% else %}
+                    <p>Sem logo cadastrada.</p>
+                {% endif %}
+                <label for="logo" class="form-label">Alterar Logo</label>
+                <input type="file" id="logo" name="logo" class="form-control">
+            </div>
+        <div class="row g-3">
+            <!-- Razão Social, Nome Fantasia e CNPJ -->
+			<div class="col-md-6">
+                <label for="cnpj" class="form-label">CNPJ</label>
+                <input type="text" id="cnpj" name="cnpj" class="form-control" value="{{ empresa.cnpj }}" required>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="nome_fantasia" class="form-label">Nome Fantasia</label>
+                <input type="text" id="nome_fantasia" name="nome_fantasia" class="form-control" value="{{ empresa.nome_fantasia }}" required>
+            </div>
+            
+			<div class="col-md-6">
+                <label for="razao_social" class="form-label">Razão Social</label>
+                <input type="text" id="razao_social" name="razao_social" class="form-control" value="{{ empresa.razao_social }}" required>
+            </div>
+
+            <!-- Nome e CPF Contato -->
+            <div class="col-md-6">
+                <label for="nome_contato" class="form-label">Nome do Contato</label>
+                <input type="text" id="nome_contato" name="nome_contato" class="form-control" value="{{ empresa.nome_contato }}">
+            </div>
+            <div class="col-md-6">
+                <label for="cpf_contato" class="form-label">CPF do Contato</label>
+                <input type="text" id="cpf_contato" name="cpf_contato" class="form-control" value="{{ empresa.cpf_contato }}">
+            </div>
+						<div class="col-md-6">
+				<label for="nome_favorecido_pix" class="form-label">Nome Favorecido PIX</label>
+				<input type="text" id="nome_favorecido_pix" name="nome_favorecido_pix" class="form-control" value="{{ empresa.nome_favorecido_pix }}" placeholder="Nome do favorecido">
+			</div>
+
+			<div class="col-md-6">
+				<label for="tipo_pix" class="form-label">Tipo de Chave PIX</label>
+				<select id="tipo_pix" name="tipo_pix" class="form-select">
+					<option value="">Selecione o tipo de chave PIX</option>
+					<option value="cnpj" {% if empresa.tipo_pix == "cnpj" %}selected{% endif %}>CNPJ</option>
+					<option value="cpf" {% if empresa.tipo_pix == "cpf" %}selected{% endif %}>CPF</option>
+					<option value="email" {% if empresa.tipo_pix == "email" %}selected{% endif %}>Email</option>
+					<option value="telefone" {% if empresa.tipo_pix == "telefone" %}selected{% endif %}>Telefone</option>
+					<option value="chave_aleatoria" {% if empresa.tipo_pix == "chave_aleatoria" %}selected{% endif %}>Chave Aleatória</option>
+					<option value="agencia_conta" {% if empresa.tipo_pix == "agencia_conta" %}selected{% endif %}>Agência e conta</option>
+				</select>
+			</div>
+            <!-- Banco, IE e Telefones -->
+            <div class="col-md-4">
+                <label for="banco" class="form-label">Chave pix</label>
+                <input type="text" id="banco" name="banco" class="form-control" value="{{ empresa.banco }}">
+            </div>
+            <div class="col-md-4">
+                <label for="ie" class="form-label">Inscrição Estadual</label>
+                <input type="text" id="ie" name="ie" class="form-control" value="{{ empresa.ie }}">
+            </div>
+            <div class="col-md-4">
+                <label for="telefone" class="form-label">Telefone</label>
+                <input type="text" id="telefone" name="telefone" class="form-control" value="{{ empresa.telefone }}">
+            </div>
+            <div class="col-md-6">
+                <label for="celular" class="form-label">Celular</label>
+                <input type="text" id="celular" name="celular" class="form-control" value="{{ empresa.celular }}">
+            </div>
+            <div class="col-md-6">
+                <label for="whatsapp_financeiro" class="form-label">WhatsApp Financeiro</label>
+                <input type="text" id="whatsapp_financeiro" name="whatsapp_financeiro" class="form-control" value="{{ empresa.whatsapp_financeiro }}">
+            </div>
+
+            <!-- Responsáveis -->
+            <div class="col-md-4">
+                <label for="operador" class="form-label">Operador</label>
+                <input type="text" id="operador" name="operador" class="form-control" value="{{ empresa.operador }}">
+            </div>
+            <div class="col-md-4">
+                <label for="supervisor" class="form-label">Supervisor</label>
+                <input type="text" id="supervisor" name="supervisor" class="form-control" value="{{ empresa.supervisor }}">
+            </div>
+            <div class="col-md-4">
+                <label for="gerente" class="form-label">Gerente</label>
+                <input type="text" id="gerente" name="gerente" class="form-control" value="{{ empresa.gerente }}">
+            </div>
+
+            <!-- Localização -->
+            <div class="col-md-3">
+                <label for="cep" class="form-label">CEP</label>
+                <input type="text" id="cep" name="cep" class="form-control" value="{{ empresa.cep }}">
+            </div>
+            <div class="col-md-6">
+                <label for="endereco" class="form-label">Endereço</label>
+                <input type="text" id="endereco" name="endereco" class="form-control" value="{{ empresa.endereco }}">
+            </div>
+            <div class="col-md-3">
+                <label for="numero" class="form-label">Número</label>
+                <input type="text" id="numero" name="numero" class="form-control" value="{{ empresa.numero }}">
+            </div>
+            <div class="col-md-4">
+                <label for="bairro" class="form-label">Bairro</label>
+                <input type="text" id="bairro" name="bairro" class="form-control" value="{{ empresa.bairro }}">
+            </div>
+            <div class="col-md-2">
+                <label for="uf" class="form-label">UF</label>
+                <input type="text" id="uf" name="uf" class="form-control" value="{{ empresa.uf }}" maxlength="2">
+            </div>
+            <div class="col-md-6">
+                <label for="cidade" class="form-label">Cidade</label>
+                <input type="text" id="cidade" name="cidade" class="form-control" value="{{ empresa.cidade }}">
+            </div>
+
+            <!-- Contatos Financeiros -->
+            <div class="col-md-6">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" name="email" class="form-control" value="{{ empresa.email }}">
+            </div>
+            <div class="col-md-6">
+                <label for="email_financeiro" class="form-label">Email Financeiro</label>
+                <input type="email" id="email_financeiro" name="email_financeiro" class="form-control" value="{{ empresa.email_financeiro }}">
+            </div>
+
+            <!-- Plano e Valor -->
+            <div class="col-md-6">
+				<label for="plano" class="form-label">Plano</label>
+				<select name="plano" id="plano" class="form-select" required>
+					<option value="">Selecione um plano</option>
+					{% for tabela in tabelas %}
+						<option value="{{ tabela.id }}" {% if empresa.plano and empresa.plano.id == tabela.id %}selected{% endif %}>
+							{{ tabela.nome }}
+						</option>
+					{% endfor %}
+				</select>
+			</div>
+
+            <div class="col-md-6">
+                <label for="valor_adesao" class="form-label">Valor de Adesão</label>
+                <input type="text" id="valor_adesao" name="valor_adesao" class="form-control" value="{{ empresa.valor_adesao }}">
+            </div>
+
+            <!-- Botão -->
+            <div class="col-12 text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">Salvar Alterações</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Máscaras para os campos
+    function aplicarMascara(input, func) {
+        setTimeout(() => {
+            input.value = func(input.value);
+        }, 1);
+    }
+
+    const mascaras = {
+        cnpj: v => v.replace(/\D/g, '').replace(/^(\d{2})(\d)/, '$1.$2').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2'),
+        cpf: v => v.replace(/\D/g, '').replace(/(\d{3})(\d)/g, '$1.$2').replace(/(\d{3})-(\d{2})/, '$1-$2'),
+        telefone: v => v.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2'),
+        cep: v => v.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2'),
+    };
+
+    document.querySelectorAll('input').forEach(input => {
+        const maskType = input.id in mascaras ? mascaras[input.id] : null;
+        if (maskType) input.addEventListener('input', e => aplicarMascara(e.target, maskType));
+    });
+</script>
+{% endblock %}
