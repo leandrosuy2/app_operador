@@ -4193,7 +4193,7 @@ def detalhes_devedor(request, titulo_id):
         "total_pendente": total_pendente_valor,
         "saldo_pendente": float(saldo_pendente),
 
-        "percentual_avista_default": 45,
+        "percentual_avista_default": 65,
         "percentual_parc_default": 55,
 
         "forma_pagamento_map": forma_pagamento_map,
