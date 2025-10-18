@@ -218,52 +218,55 @@
   </form>
 
   <h2 class="mt-4 text-center fw-bold" style="font-size:24px;color:#e67e22;text-transform:uppercase;letter-spacing:1px;">
-    <i class="fas fa-search-alt me-2" style="color:#d35400;"></i> Resultado pesquisa
+    <i class="fas fa-calendar-alt me-2" style="color:#d35400;"></i> Parcelas Próximas do Vencimento (5 dias)
   </h2>
 
-  <table class="table table-hover table-bordered mt-3" style="font-size:.8rem;">
-    <thead class="table-dark">
-      <tr>
-        <th>Devedor</th>
-        <th>Credor</th>
-        <th>Nome da Mãe</th>
-        <th>Operador</th>
-        <th>CPF/CNPJ</th>
-        <th class="text-center">Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in agenda_pendentes_paginated %}
-      <tr>
-        <td><b>
-          {# evita "nan" vindo do banco #}
-          {% with n=item.nome|default_if_none:""|stringformat:"s" %}
-          {% with r=item.razao_social|default_if_none:""|stringformat:"s" %}
-          {% with rl=r|lower %}
-            {% if n and r and rl != 'nan' %}
-              {{ n }} {{ r }}
-            {% elif n %}
-              {{ n }}
-            {% elif r and rl != 'nan' %}
-              {{ r }}
+  {% if parcelas_proximas_data %}
+    <table class="table table-hover table-bordered mt-3" style="font-size:.8rem;">
+      <thead class="table-dark">
+        <tr>
+          <th>Devedor</th>
+          <th>Empresa</th>
+          <th>Parcela</th>
+          <th>Vencimento</th>
+          <th>Valor</th>
+          <th>Dias Restantes</th>
+          <th>Operador</th>
+          <th class="text-center">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for parcela in parcelas_proximas_data %}
+        <tr>
+          <td><b>{{ parcela.devedor_nome|default:'Não informado' }}</b></td>
+          <td><b>{{ parcela.empresa_nome|default:'Não informado' }}</b></td>
+          <td><b>{{ parcela.parcela_numero }}</b></td>
+          <td><b>{{ parcela.data_vencimento|date:"d/m/Y" }}</b></td>
+          <td><b>R$ {{ parcela.valor|floatformat:2 }}</b></td>
+          <td>
+            {% if parcela.dias_para_vencimento == 0 %}
+              <span class="badge bg-danger">Hoje</span>
+            {% elif parcela.dias_para_vencimento == 1 %}
+              <span class="badge bg-warning">1 dia</span>
             {% else %}
-              Não informado
+              <span class="badge bg-info">{{ parcela.dias_para_vencimento }} dias</span>
             {% endif %}
-          {% endwith %}{% endwith %}{% endwith %}
-        </b></td>
-        <td><b>{{ item.nome_fantasia_credor }}</b></td>
-        <td><b>{{ item.nome_mae|default:'' }}</b></td>
-        <td><b>{{ item.operador|default:'' }}</b></td>
-        <td><b>{% if item.cpf %}{{ item.cpf }}{% elif item.cnpj %}{{ item.cnpj }}{% else %}Não informado{% endif %}</b></td>
-        <td class="text-center">
-          <a href="{% url 'detalhes_devedor' item.id %}" target="_blank" class="btn btn-sm btn-info">Visualizar</a>
-          <button class="btn btn-sm btn-success finalizar-btn" data-id="{{ item.id }}">Finalizar</button>
-          <a href="{% url 'realizar_baixa' item.id %}" class="btn btn-success btn-sm">Baixar</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+          </td>
+          <td><b>{{ parcela.operador|default:'Não atribuído' }}</b></td>
+          <td class="text-center">
+            <a href="{% url 'detalhes_devedor' parcela.id %}" target="_blank" class="btn btn-sm btn-info">Visualizar</a>
+            <button class="btn btn-sm btn-success finalizar-btn" data-id="{{ parcela.id }}">Finalizar</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="alert alert-info mt-3">
+      <i class="fas fa-info-circle me-2"></i>
+      Nenhuma parcela próxima do vencimento encontrada nos próximos 5 dias.
+    </div>
+  {% endif %}
 
 
 

@@ -531,6 +531,57 @@ def dashboard(request):
     negociados_paginated = paginator_negociados.get_page(page_number_negociados)
 
     # =========================================================
+    # Parcelas próximas do vencimento (próximos 5 dias)
+    # =========================================================
+    data_fim_5_dias = hoje + timedelta(days=5)
+    
+    parcelas_proximas_query = """
+        SELECT
+            p.id,
+            p.parcela_numero,
+            p.data_vencimento,
+            p.valor,
+            p.status,
+            d.nome AS devedor_nome,
+            d.cpf,
+            d.cnpj,
+            e.nome_fantasia AS empresa_nome,
+            t.operador,
+            a.contato,
+            DATEDIFF(p.data_vencimento, CURDATE()) AS dias_para_vencimento
+        FROM core_parcelamento p
+        JOIN core_acordo a ON p.acordo_id = a.id
+        JOIN titulo t ON a.titulo_id = t.id
+        JOIN devedores d ON t.devedor_id = d.id
+        JOIN core_empresa e ON d.empresa_id = e.id
+        WHERE p.status = 'PENDENTE'
+            AND p.data_vencimento BETWEEN CURDATE() AND %s
+            AND e.status_empresa = 1
+        ORDER BY p.data_vencimento ASC, p.parcela_numero ASC
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(parcelas_proximas_query, [data_fim_5_dias])
+        parcelas_proximas_rows = cursor.fetchall()
+    
+    parcelas_proximas_data = []
+    for row in parcelas_proximas_rows:
+        parcelas_proximas_data.append({
+            'id': row[0],
+            'parcela_numero': row[1],
+            'data_vencimento': row[2],
+            'valor': row[3],
+            'status': row[4],
+            'devedor_nome': row[5],
+            'cpf': row[6],
+            'cnpj': row[7],
+            'empresa_nome': row[8],
+            'operador': row[9],
+            'contato': row[10],
+            'dias_para_vencimento': row[11]
+        })
+
+    # =========================================================
     # Contexto (incluo também JSON para usar nos modais via JS)
     # =========================================================
     context = {
@@ -549,6 +600,7 @@ def dashboard(request):
         "agendamentos_hoje": agendamentos_hoje,
         "agenda_pendentes_paginated": agenda_pendentes_paginated,
         "negociados_paginated": negociados_paginated,
+        "parcelas_proximas_data": parcelas_proximas_data,
 
         "query": query,
         "quitados_hoje": quitados_hoje,
