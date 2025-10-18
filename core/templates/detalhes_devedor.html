@@ -497,6 +497,26 @@
     const parseBRDateToISO = br => { if(!br||!/^\d{2}\/\d{2}\/\d{4}$/.test(br)) return ''; const [d,m,y]=br.split('/'); return `${y}-${m}-${d}`; };
     const addMonths = (iso, m)=>{ if(!iso) return ''; const [y,mo,d]=iso.split('-').map(Number); const dt=new Date(y,mo-1,d); dt.setMonth(dt.getMonth()+m); return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}-${pad2(dt.getDate())}`; };
 
+    // ===== Função para forçar cálculo inicial
+    function forcarCalculoInicial() {
+      console.log('=== FORÇANDO CÁLCULO INICIAL ===');
+      
+      // Aguardar um pouco para garantir que todos os elementos estejam prontos
+      setTimeout(() => {
+        console.log('Executando cálculo inicial...');
+        atualizarCalculos();
+        
+        // Verificar se os valores foram preenchidos
+        const campos = ['valorAvista', 'totalProposta', 'valorEntrada', 'valorParcela'];
+        campos.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            console.log(`Campo ${id} valor:`, el.value);
+          }
+        });
+      }, 100);
+    }
+
     // ===== Função para garantir visibilidade dos campos
     function garantirVisibilidadeCampos() {
       const campos = ['valorAvista', 'totalProposta', 'valorEntrada', 'valorParcela', 'editarManual', 'tabelaParcelas'];
@@ -681,11 +701,16 @@
     }
 
     let modoManual=false;
-    function toggleEdicaoManual(){
+    function toggleEdicaoManual(recalcular = true){
       modoManual=document.getElementById('editarManual').checked;
       ['valorAvista','totalProposta','valorEntrada','valorParcela'].forEach(id=>{
         const el=document.getElementById(id); if(el) el.readOnly=!modoManual;
       });
+      
+      // Só recalcula se solicitado explicitamente
+      if(recalcular) {
+        atualizarCalculos();
+      }
     }
     function sincronizarHidden(){
       const t=document.getElementById('previewInterno').value||''; 
@@ -846,7 +871,7 @@
       atualizarCalculos();
     }
 
-    document.getElementById('editarManual').addEventListener('change', ()=>{ toggleEdicaoManual(); atualizarCalculos(); });
+    document.getElementById('editarManual').addEventListener('change', ()=>{ toggleEdicaoManual(true); });
     ['pctAvista','pctParc','pctEntrada','qtdParcelas','dataEntrada'].forEach(id=>{
       document.getElementById(id).addEventListener('input', atualizarCalculos);
     });
@@ -874,14 +899,17 @@
         }
       });
       
-      toggleEdicaoManual(); 
-      atualizarCalculos(); 
+      // PRIMEIRO: Calcular os valores automaticamente
+      forcarCalculoInicial(); 
+      
+      // SEGUNDO: Configurar o modo manual (mas sem recalcular)
+      toggleEdicaoManual(false); 
       
       // Força recálculo após um pequeno delay para garantir que todos os elementos estejam prontos
       setTimeout(() => {
         console.log('Recalculando após delay...');
         garantirVisibilidadeCampos(); // Garantir visibilidade novamente
-        atualizarCalculos();
+        atualizarCalculos(); // Recalcular novamente
         
         // Verificar novamente após o delay
         campos.forEach(id => {
@@ -891,6 +919,12 @@
           }
         });
       }, 500);
+      
+      // Recálculo adicional após mais tempo para garantir que tudo esteja pronto
+      setTimeout(() => {
+        console.log('Recálculo final...');
+        atualizarCalculos();
+      }, 1000);
     });
   </script>
   <!-- =================== FIM GERAR PROPOSTA AO CREDOR =================== -->
