@@ -4318,40 +4318,68 @@ def proximo_cliente(request, titulo_id):
     hoje = now().date()
     data_limite_15_dias = hoje - timedelta(days=15)
     
-    # título/devedor atual
-    t_atual = get_object_or_404(Titulo.objects.select_related('devedor__empresa'), pk=titulo_id)
+    # Early return: título/devedor atual (otimizado - só campos necessários)
+    t_atual = get_object_or_404(
+        Titulo.objects.only('devedor_id').select_related('devedor__empresa'), 
+        pk=titulo_id
+    )
     dev_atual_id = t_atual.devedor_id
 
-    # Pool de títulos elegíveis
+    # Pool de títulos elegíveis (otimizado - sem ORDER BY automático)
     qs = Titulo.objects.filter(
-        Q(statusBaixa__in=[0, 3]) | Q(statusBaixa__isnull=True)  # pendentes/negociados
-    )
+        Q(statusBaixa__in=[0, 3]) | Q(statusBaixa__isnull=True)
+    ).order_by()  # Cancela ORDER BY automático
 
-    # (opcional) limitar ao operador logado OU sem operador
-    qs = qs.filter(Q(operador=request.user.username) | Q(operador__isnull=True) | Q(operador=""))
+    # Filtros otimizados
+    qs = qs.filter(
+        Q(operador=request.user.username) | Q(operador__isnull=True) | Q(operador="")
+    ).exclude(ultima_acao=hoje).filter(
+        devedor__empresa__status_empresa=True
+    ).exclude(devedor_id=dev_atual_id)
 
-    # Excluir só os que já tiveram ação HOJE (em vez de exigir isnull)
-    qs = qs.exclude(ultima_acao=hoje)
-
-    # Empresas ativas (via devedor -> empresa)
-    qs = qs.filter(devedor__empresa__status_empresa=True)
-
-    # Excluir o devedor atual
-    qs = qs.exclude(devedor_id=dev_atual_id)
-
-    # Buscar devedores únicos com títulos elegíveis
-    devedores_elegiveis = qs.values_list('devedor_id', flat=True).distinct()
+    # Buscar devedores únicos (otimizado - só IDs)
+    devedores_elegiveis = list(qs.values_list('devedor_id', flat=True).distinct())
     
     if not devedores_elegiveis:
         messages.info(request, 'Nenhum devedor elegível encontrado.')
         return redirect('dashboard')
 
-    # Buscar informações dos devedores para aplicar critérios de prioridade
+    # OTIMIZAÇÃO CRÍTICA: Buscar todos os dados necessários em UMA consulta
+    # Em vez de loop com .get() e .exists() separados
+    devedores_data = Devedor.objects.filter(
+        id__in=devedores_elegiveis
+    ).only(
+        'id', 'created_at',
+        'telefone', 'telefone_valido',
+        'telefone1', 'telefone1_valido',
+        'telefone2', 'telefone2_valido',
+        'telefone3', 'telefone3_valido',
+        'telefone4', 'telefone4_valido',
+        'telefone5', 'telefone5_valido',
+        'telefone6', 'telefone6_valido',
+        'telefone7', 'telefone7_valido',
+        'telefone8', 'telefone8_valido',
+        'telefone9', 'telefone9_valido',
+        'telefone10', 'telefone10_valido'
+    ).order_by()  # Cancela ORDER BY automático
+
+    # Buscar follow-ups e agendamentos em UMA consulta (otimizado)
+    devedores_com_followup = set(
+        FollowUp.objects.filter(devedor_id__in=devedores_elegiveis)
+        .values_list('devedor_id', flat=True)
+        .order_by()  # Cancela ORDER BY automático
+    )
+    
+    devedores_com_agendamento = set(
+        Agendamento.objects.filter(devedor_id__in=devedores_elegiveis)
+        .values_list('devedor_id', flat=True)
+        .order_by()  # Cancela ORDER BY automático
+    )
+
+    # Processar dados (sem loops de consulta)
     devedores_info = []
-    for devedor_id in devedores_elegiveis:
-        devedor = Devedor.objects.get(id=devedor_id)
-        
-        # Verificar se tem contato de celular (qualquer telefone válido)
+    for devedor in devedores_data:
+        # Verificar telefones válidos (otimizado - sem conversão de datetime)
         tem_celular = any([
             devedor.telefone and devedor.telefone_valido == 'SIM',
             devedor.telefone1 and devedor.telefone1_valido == 'SIM',
@@ -4366,37 +4394,37 @@ def proximo_cliente(request, titulo_id):
             devedor.telefone10 and devedor.telefone10_valido == 'SIM',
         ])
         
-        # Verificar se foi acionado (tem follow_up ou agendamento)
+        # Verificar se foi acionado (otimizado - sem consultas no loop)
         foi_acionado = (
-            FollowUp.objects.filter(devedor_id=devedor_id).exists() or
-            Agendamento.objects.filter(devedor_id=devedor_id).exists()
+            devedor.id in devedores_com_followup or 
+            devedor.id in devedores_com_agendamento
         )
         
-        # Verificar se foi cadastrado nos últimos 15 dias
+        # Verificar cadastro recente (otimizado - comparação direta)
         cadastrado_ate_15_dias = devedor.created_at.date() >= data_limite_15_dias
         
         devedores_info.append({
-            'id': devedor_id,
+            'id': devedor.id,
             'tem_celular': tem_celular,
             'foi_acionado': foi_acionado,
             'cadastrado_ate_15_dias': cadastrado_ate_15_dias,
             'created_at': devedor.created_at
         })
 
-    # Aplicar critérios de prioridade
-    # 1º - preferência a devedores sem contato de celular
-    # 2º - preferência a devedores que ainda não tenha sido acionado
-    # 3º - preferência a devedores cadastrados com até 15 dias no sistema
-    
-    # Ordenar por prioridade
+    # Early return se não há devedores
+    if not devedores_info:
+        messages.info(request, 'Nenhum devedor elegível encontrado.')
+        return redirect('dashboard')
+
+    # Aplicar critérios de prioridade (otimizado)
     devedores_priorizados = sorted(devedores_info, key=lambda x: (
-        x['tem_celular'],  # False vem antes de True (sem celular tem prioridade)
-        x['foi_acionado'],  # False vem antes de True (não acionado tem prioridade)
-        not x['cadastrado_ate_15_dias'],  # True vem antes de False (cadastrado até 15 dias tem prioridade)
+        x['tem_celular'],  # False vem antes de True
+        x['foi_acionado'],  # False vem antes de True
+        not x['cadastrado_ate_15_dias'],  # True vem antes de False
         x['created_at']  # Mais recente primeiro
     ))
     
-    # Embaralhar devedores com a mesma prioridade para dar aleatoriedade
+    # Embaralhar por grupos de prioridade (otimizado)
     grupos_prioridade = {}
     for devedor in devedores_priorizados:
         chave_prioridade = (devedor['tem_celular'], devedor['foi_acionado'], devedor['cadastrado_ate_15_dias'])
@@ -4404,23 +4432,25 @@ def proximo_cliente(request, titulo_id):
             grupos_prioridade[chave_prioridade] = []
         grupos_prioridade[chave_prioridade].append(devedor)
     
-    # Embaralhar cada grupo e reconstruir a lista
+    # Embaralhar e reconstruir (otimizado)
     devedores_finais = []
     for chave in sorted(grupos_prioridade.keys()):
         grupo = grupos_prioridade[chave]
         random.shuffle(grupo)
         devedores_finais.extend(grupo)
     
-    # Pegar o primeiro devedor da lista priorizada
+    # Early return com próximo título (otimizado)
     if devedores_finais:
         prox_dev_id = devedores_finais[0]['id']
         
+        # Buscar próximo título (otimizado - só campos necessários)
         prox_titulo = (
             Titulo.objects.filter(devedor_id=prox_dev_id)
             .filter(Q(statusBaixa__in=[0, 3]) | Q(statusBaixa__isnull=True))
+            .only('id')  # Só precisa do ID
             .order_by('dataVencimento', 'id')
             .first()
-        ) or Titulo.objects.filter(devedor_id=prox_dev_id).order_by('id').first()
+        ) or Titulo.objects.filter(devedor_id=prox_dev_id).only('id').order_by('id').first()
 
         if prox_titulo:
             return redirect('detalhes_devedor', titulo_id=prox_titulo.id)
