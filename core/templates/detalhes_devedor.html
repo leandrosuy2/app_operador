@@ -456,6 +456,11 @@
         <button type="button" class="btn btn-info" onclick="testarComValoresFicticios()">
           <i class="fas fa-flask"></i> Testar Valores
         </button>
+        
+        <!-- Botão para forçar preenchimento -->
+        <button type="button" class="btn btn-success" onclick="forcarPreenchimentoCampos()">
+          <i class="fas fa-magic"></i> Forçar Preenchimento
+        </button>
       </div>
       <small class="text-muted d-block mt-2">
         Observação: o texto acima é <strong>apenas para o CREDOR</strong>. Não há envio por WhatsApp desta proposta.
@@ -490,7 +495,10 @@
     console.log('=== SCRIPT CARREGADO ===');
     
     // ===== Utils
-    const moedaBRL = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v||0));
+    const moedaBRL = v => {
+      const valor = Number(v||0);
+      return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(valor);
+    };
     const parseBRL = s => { if(!s) return 0; s=(''+s).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.'); const n=Number(s); return isNaN(n)?0:n; };
     const pad2 = n => String(n).padStart(2,'0');
     const fmtDateBR = iso => { if(!iso) return '-'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
@@ -514,7 +522,51 @@
             console.log(`Campo ${id} valor:`, el.value);
           }
         });
+        
+        // Se os campos não foram preenchidos, forçar preenchimento
+        setTimeout(() => {
+          forcarPreenchimentoCampos();
+        }, 200);
       }, 100);
+    }
+
+    // ===== Função para forçar preenchimento dos campos
+    function forcarPreenchimentoCampos() {
+      console.log('=== FORÇANDO PREENCHIMENTO DOS CAMPOS ===');
+      
+      // Obter os valores calculados
+      const { total, capital, juros } = lerTotaisEVencimentoEAtraso();
+      const pctAvista = Number(document.getElementById('pctAvista')?.value || 0);
+      const pctParc = Number(document.getElementById('pctParc')?.value || 0);
+      const pctEntrada = Number(document.getElementById('pctEntrada')?.value || 0);
+      const qtdParcelas = Math.max(1, parseInt(document.getElementById('qtdParcelas')?.value || '1', 10));
+      
+      // Calcular valores
+      const jurosAvista = Math.max(0, juros * (1 - pctAvista/100));
+      const jurosParcel = Math.max(0, juros * (1 - pctParc/100));
+      
+      const valorAvista = capital + jurosAvista;
+      const totalProposta = capital + jurosParcel;
+      const valorEntrada = totalProposta * (pctEntrada/100);
+      const valorParcela = qtdParcelas > 0 ? (totalProposta - valorEntrada) / qtdParcelas : 0;
+      
+      console.log('Valores para forçar:', { valorAvista, totalProposta, valorEntrada, valorParcela });
+      
+      // Forçar preenchimento
+      const campos = [
+        { id: 'valorAvista', valor: valorAvista },
+        { id: 'totalProposta', valor: totalProposta },
+        { id: 'valorEntrada', valor: valorEntrada },
+        { id: 'valorParcela', valor: valorParcela }
+      ];
+      
+      campos.forEach(({ id, valor }) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.value = moedaBRL(valor);
+          console.log(`Campo ${id} forçado para:`, el.value);
+        }
+      });
     }
 
     // ===== Função para garantir visibilidade dos campos
@@ -841,10 +893,29 @@
           const valorEntradaEl = document.getElementById('valorEntrada');
           const valorParcelaEl = document.getElementById('valorParcela');
 
-          if (valorAvistaEl) valorAvistaEl.value = moedaBRL(valorAvista);
-          if (totalPropostaEl) totalPropostaEl.value = moedaBRL(totalProposta);
-          if (valorEntradaEl) valorEntradaEl.value = moedaBRL(valorEntrada);
-          if (valorParcelaEl) valorParcelaEl.value = moedaBRL(valorParcela);
+          console.log('Elementos encontrados:', {
+            valorAvista: !!valorAvistaEl,
+            totalProposta: !!totalPropostaEl,
+            valorEntrada: !!valorEntradaEl,
+            valorParcela: !!valorParcelaEl
+          });
+
+          if (valorAvistaEl) {
+            valorAvistaEl.value = moedaBRL(valorAvista);
+            console.log('valorAvista atualizado para:', valorAvistaEl.value);
+          }
+          if (totalPropostaEl) {
+            totalPropostaEl.value = moedaBRL(totalProposta);
+            console.log('totalProposta atualizado para:', totalPropostaEl.value);
+          }
+          if (valorEntradaEl) {
+            valorEntradaEl.value = moedaBRL(valorEntrada);
+            console.log('valorEntrada atualizado para:', valorEntradaEl.value);
+          }
+          if (valorParcelaEl) {
+            valorParcelaEl.value = moedaBRL(valorParcela);
+            console.log('valorParcela atualizado para:', valorParcelaEl.value);
+          }
         }
 
         montarTabelaParcelas(qtdParcelas, dataEntrada, valorParcela);
@@ -873,13 +944,27 @@
 
     document.getElementById('editarManual').addEventListener('change', ()=>{ toggleEdicaoManual(true); });
     ['pctAvista','pctParc','pctEntrada','qtdParcelas','dataEntrada'].forEach(id=>{
-      document.getElementById(id).addEventListener('input', atualizarCalculos);
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', atualizarCalculos);
+      }
     });
     ['valorAvista','totalProposta','valorEntrada','valorParcela'].forEach(id=>{
-      document.getElementById(id).addEventListener('input', ()=>{ if(modoManual) atualizarCalculos(); });
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', ()=>{ if(modoManual) atualizarCalculos(); });
+      }
     });
-    document.getElementById('previewInterno').addEventListener('input', sincronizarHidden);
-    document.getElementById('formSalvarDetalhamento').addEventListener('submit', sincronizarHidden);
+    
+    const previewEl = document.getElementById('previewInterno');
+    if (previewEl) {
+      previewEl.addEventListener('input', sincronizarHidden);
+    }
+    
+    const formEl = document.getElementById('formSalvarDetalhamento');
+    if (formEl) {
+      formEl.addEventListener('submit', sincronizarHidden);
+    }
 
     document.addEventListener('DOMContentLoaded', ()=>{ 
       console.log('DOM carregado, inicializando cálculos...');
