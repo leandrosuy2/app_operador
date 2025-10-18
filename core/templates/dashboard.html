@@ -366,35 +366,6 @@
 {% endif %}
 
 
-  <!-- Últimos clientes cadastrados -->
-  <h2 class="mt-4 text-center fw-bold" style="font-size:24px;color:#3498db;text-transform:uppercase;letter-spacing:1px;">
-    <i class="fas fa-users me-2" style="color:#2980b9;"></i> Últimos Clientes Cadastrados
-  </h2>
-
-  <table class="table table-striped table-bordered mt-3" style="font-size:.8rem;">
-    <thead class="table-dark"><tr><th>ID</th><th>Nome</th><th>CPF/CNPJ</th><th>Data de Cadastro</th></tr></thead>
-    <tbody>
-      {% for cliente in ultimos_clientes %}
-      <tr>
-        <td><b>{{ cliente.id }}</b></td>
-        <td><b>
-          {% with nf=cliente.nome_fantasia|default_if_none:""|stringformat:"s" %}
-          {% with nfl=nf|lower %}
-            {% if cliente.nome %}
-              {{ cliente.nome }}{% if nf and nfl != 'nan' %} - {{ nf }}{% endif %}
-            {% elif nf and nfl != 'nan' %}
-              {{ nf }}
-            {% else %}
-              Sem nome
-            {% endif %}
-          {% endwith %}{% endwith %}
-        </b></td>
-        <td><b>{% if cliente.cpf %}{{ cliente.cpf }}{% elif cliente.cnpj %}{{ cliente.cnpj }}{% else %}Não informado{% endif %}</b></td>
-        <td><b>{{ cliente.created_at|date:"d/m/Y" }}</b></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
 </div>
 
 <!-- ÚNICO Modal WhatsApp (fora de loops) -->
