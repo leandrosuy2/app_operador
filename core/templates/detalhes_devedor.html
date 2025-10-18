@@ -1,6 +1,29 @@
 {% extends 'base.html' %}
 {% load custom_filters l10n %}
 {% block content %}
+
+<style>
+  .followup-entry {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .followup-header {
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .followup-content {
+    color: #212529;
+    line-height: 1.6;
+    white-space: pre-line;
+    font-size: 0.9rem;
+  }
+  
+  .followup-content br {
+    margin-bottom: 4px;
+  }
+</style>
 <div class="container mt-5">
 
   <!-- ====== CONTEXTO EM DATASETS (para JS usar com segurança) ====== -->
@@ -1002,15 +1025,28 @@
     </form>
 
     <h4 class="mt-4">Histórico</h4>
-    <ul class="list-group" id="followupList">
+    <div id="followupList">
       {% for follow_up in follow_ups %}
-        <li class="list-group-item">
-          <p class="mb-1"><strong>{{ follow_up.created_at|date:"d/m/Y H:i" }}:</strong> {{ follow_up.texto }}</p>
-        </li>
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="followup-entry">
+              <div class="followup-header">
+                <strong>{{ follow_up.created_at|date:"d/m/Y H:i" }}:</strong>
+              </div>
+              <div class="followup-content">
+                {{ follow_up.texto|linebreaks }}
+              </div>
+            </div>
+          </div>
+        </div>
       {% empty %}
-        <li class="list-group-item">Nenhum Follow-up registrado.</li>
+        <div class="card mb-3">
+          <div class="card-body">
+            <p class="text-muted mb-0">Nenhum Follow-up registrado.</p>
+          </div>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
   </div>
 </div>
 
@@ -1157,15 +1193,35 @@
 
   // Insere o follow-up no topo da lista sem recarregar
   function addFollowupToDOM(texto){
-    const ul = document.getElementById('followupList'); // precisa do id no HTML
-    if (!ul) return;
-    const li = document.createElement('li');
-    li.className = 'list-group-item';
+    const container = document.getElementById('followupList');
+    if (!container) return;
+    
     const now = new Date();
     const ts = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
     const safe = escapeHTML(texto).replace(/\n/g,'<br>');
-    li.innerHTML = `<p class="mb-1"><strong>${ts}:</strong> ${safe}</p>`;
-    ul.prepend(li);
+    
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'card mb-3';
+    cardDiv.innerHTML = `
+      <div class="card-body">
+        <div class="followup-entry">
+          <div class="followup-header">
+            <strong>${ts}:</strong>
+          </div>
+          <div class="followup-content">
+            ${safe}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remove a mensagem "Nenhum Follow-up registrado" se existir
+    const emptyMsg = container.querySelector('.text-muted');
+    if (emptyMsg) {
+      emptyMsg.closest('.card').remove();
+    }
+    
+    container.insertBefore(cardDiv, container.firstChild);
   }
 
   /* ================== AÇÃO: ENVIAR WHATS ================== */
