@@ -465,66 +465,102 @@
 
     // ===== Extrai títulos das tabelas (entrada + associados)
     function extrairTitulos(){
-      const arr=[];
-      const te = document.getElementById('tblTitulosEntrada');
-      if(te){
-        te.querySelectorAll('tbody tr').forEach(tr=>{
-          const td=tr.querySelectorAll('td'); if(td.length<12) return;
-          const capital = parseBRL(td[3].textContent);            // Valor Divida
-          const vencBR  = (td[7].textContent||'').trim();         // Vencimento
-          const juros   = parseBRL(td[9].textContent);            // Juros
-          const comJuros= parseBRL(td[10].textContent);           // Valor com juros
-          const dias    = parseInt((td[11].textContent||'0').replace(/\D/g,''))||0; // Dias atraso
-          const iso     = parseBRDateToISO(vencBR);
-          const total   = comJuros || (capital + juros);
-          const ju      = (juros || Math.max(0,total-capital));
-          if(capital>0 || total>0){ arr.push({capital, juros: ju, total, iso, dias}); }
+      try {
+        const arr=[];
+        const te = document.getElementById('tblTitulosEntrada');
+        console.log('Tabela entrada encontrada:', !!te);
+        
+        if(te){
+          te.querySelectorAll('tbody tr').forEach(tr=>{
+            const td=tr.querySelectorAll('td'); 
+            if(td.length<12) return;
+            const capital = parseBRL(td[3].textContent);            // Valor Divida
+            const vencBR  = (td[7].textContent||'').trim();         // Vencimento
+            const juros   = parseBRL(td[9].textContent);            // Juros
+            const comJuros= parseBRL(td[10].textContent);           // Valor com juros
+            const dias    = parseInt((td[11].textContent||'0').replace(/\D/g,''))||0; // Dias atraso
+            const iso     = parseBRDateToISO(vencBR);
+            const total   = comJuros || (capital + juros);
+            const ju      = (juros || Math.max(0,total-capital));
+            if(capital>0 || total>0){ arr.push({capital, juros: ju, total, iso, dias}); }
+          });
+        }
+        
+        const ta = document.getElementById('tblTitulosAssociados');
+        console.log('Tabela associados encontrada:', !!ta);
+        
+        if(ta){
+          ta.querySelectorAll('tbody tr').forEach(tr=>{
+            const td=tr.querySelectorAll('td'); 
+            if(td.length<12) return;
+            const total   = parseBRL(td[4].textContent);            // Total & Parcela
+            const vencBR  = (td[6].textContent||'').trim();
+            const juros   = parseBRL(td[8].textContent);
+            const cap     = Math.max(0, total - juros);
+            const dias    = parseInt((td[9].textContent||'0').replace(/\D/g,''))||0;
+            const iso     = parseBRDateToISO(vencBR);
+            if(cap>0 || total>0){ arr.push({capital: cap, juros, total, iso, dias}); }
+          });
+        }
+        
+        let sumCap=0, sumJuros=0, sumTotal=0, firstISO='', maxDias=0;
+        arr.forEach(x=>{
+          sumCap+=x.capital||0; 
+          sumJuros+=x.juros||0; 
+          sumTotal+=x.total||0;
+          if(x.iso){ if(!firstISO || new Date(x.iso) < new Date(firstISO)) firstISO = x.iso; }
+          if(x.dias && x.dias>maxDias) maxDias=x.dias;
         });
+        
+        console.log('Títulos extraídos:', arr.length, 'somas:', { sumCap, sumJuros, sumTotal, firstISO, maxDias });
+        
+        return { sumCap, sumJuros, sumTotal, firstISO, maxDias };
+      } catch (error) {
+        console.error('Erro em extrairTitulos:', error);
+        return { sumCap: 0, sumJuros: 0, sumTotal: 0, firstISO: '', maxDias: 0 };
       }
-      const ta = document.getElementById('tblTitulosAssociados');
-      if(ta){
-        ta.querySelectorAll('tbody tr').forEach(tr=>{
-          const td=tr.querySelectorAll('td'); if(td.length<12) return;
-          const total   = parseBRL(td[4].textContent);            // Total & Parcela
-          const vencBR  = (td[6].textContent||'').trim();
-          const juros   = parseBRL(td[8].textContent);
-          const cap     = Math.max(0, total - juros);
-          const dias    = parseInt((td[9].textContent||'0').replace(/\D/g,''))||0;
-          const iso     = parseBRDateToISO(vencBR);
-          if(cap>0 || total>0){ arr.push({capital: cap, juros, total, iso, dias}); }
-        });
-      }
-      let sumCap=0, sumJuros=0, sumTotal=0, firstISO='', maxDias=0;
-      arr.forEach(x=>{
-        sumCap+=x.capital||0; sumJuros+=x.juros||0; sumTotal+=x.total||0;
-        if(x.iso){ if(!firstISO || new Date(x.iso) < new Date(firstISO)) firstISO = x.iso; }
-        if(x.dias && x.dias>maxDias) maxDias=x.dias;
-      });
-      return { sumCap, sumJuros, sumTotal, firstISO, maxDias };
     }
 
     // ===== Lê totais + fallback
     function lerTotaisEVencimentoEAtraso(){
-      const el = document.getElementById('valorBase');
-      const totalContext = Number(el?.dataset.total || 0);
-      const capitalContext = el?.dataset.capital !== '' ? Number(el.dataset.capital) : NaN;
+      try {
+        const el = document.getElementById('valorBase');
+        const totalContext = Number(el?.dataset.total || 0);
+        const capitalContext = el?.dataset.capital !== '' ? Number(el.dataset.capital) : NaN;
 
-      const viaTabela = extrairTitulos();
+        console.log('Dados do elemento valorBase:', { 
+          totalContext, 
+          capitalContext, 
+          dataset: el?.dataset 
+        });
 
-      const total = viaTabela.sumTotal || totalContext || 0;
+        const viaTabela = extrairTitulos();
+        console.log('Dados extraídos da tabela:', viaTabela);
 
-      let capital = viaTabela.sumCap || (!isNaN(capitalContext) ? capitalContext : 0);
-      let juros   = viaTabela.sumJuros || Math.max(0, total - capital);
+        const total = viaTabela.sumTotal || totalContext || 0;
 
-      const firstISO = viaTabela.firstISO || '';
-      const maxDias  = viaTabela.maxDias || 0;
+        let capital = viaTabela.sumCap || (!isNaN(capitalContext) ? capitalContext : 0);
+        let juros   = viaTabela.sumJuros || Math.max(0, total - capital);
 
-      // Reflete nos campos visuais
-      document.getElementById('valorBase').value   = moedaBRL(total||0);
-      document.getElementById('valorCapital').value = moedaBRL(capital||0);
-      document.getElementById('valorJuros').value   = moedaBRL(juros||0);
+        const firstISO = viaTabela.firstISO || '';
+        const maxDias  = viaTabela.maxDias || 0;
 
-      return { total, capital, juros, firstISO, maxDias };
+        console.log('Valores finais:', { total, capital, juros, firstISO, maxDias });
+
+        // Reflete nos campos visuais
+        const valorBaseEl = document.getElementById('valorBase');
+        const valorCapitalEl = document.getElementById('valorCapital');
+        const valorJurosEl = document.getElementById('valorJuros');
+
+        if (valorBaseEl) valorBaseEl.value = moedaBRL(total||0);
+        if (valorCapitalEl) valorCapitalEl.value = moedaBRL(capital||0);
+        if (valorJurosEl) valorJurosEl.value = moedaBRL(juros||0);
+
+        return { total, capital, juros, firstISO, maxDias };
+      } catch (error) {
+        console.error('Erro em lerTotaisEVencimentoEAtraso:', error);
+        return { total: 0, capital: 0, juros: 0, firstISO: '', maxDias: 0 };
+      }
     }
 
     let modoManual=false;
@@ -551,14 +587,28 @@
     }
 
     function montarTabelaParcelas(qtdParcelas, dataEntrada, valorParcela){
-      const tbody=document.querySelector('#tabelaParcelas tbody'); if(!tbody) return;
-      const baseISO=dataEntrada || new Date().toISOString().slice(0,10);
-      let html='';
-      for(let i=1;i<=qtdParcelas;i++){
-        const iso=addMonths(baseISO,i);
-        html += `<tr><td>${i}</td><td>${fmtDateBR(iso)}</td><td>${moedaBRL(valorParcela)}</td></tr>`;
+      try {
+        const tbody=document.querySelector('#tabelaParcelas tbody'); 
+        if(!tbody) {
+          console.error('Tabela de parcelas não encontrada');
+          return;
+        }
+        
+        const baseISO=dataEntrada || new Date().toISOString().slice(0,10);
+        let html='';
+        
+        console.log('Montando tabela:', { qtdParcelas, dataEntrada, valorParcela, baseISO });
+        
+        for(let i=1;i<=qtdParcelas;i++){
+          const iso=addMonths(baseISO,i);
+          html += `<tr><td>${i}</td><td>${fmtDateBR(iso)}</td><td>${moedaBRL(valorParcela)}</td></tr>`;
+        }
+        tbody.innerHTML=html;
+        
+        console.log('Tabela montada com', qtdParcelas, 'parcelas');
+      } catch (error) {
+        console.error('Erro em montarTabelaParcelas:', error);
       }
-      tbody.innerHTML=html;
     }
 
     // ===== Texto (Credor)
@@ -595,57 +645,80 @@
     }
 
     function atualizarCalculos(){
-      const ctxEl=document.getElementById('ctx');
-      const ctx={
-        user: ctxEl.dataset.user||'',
-        devedor: ctxEl.dataset.devedor||'',
-        fantasia: ctxEl.dataset.empresaFantasia||'',
-        razao: ctxEl.dataset.empresaRazao||'',
-        empresa: (ctxEl.dataset.empresaFantasia||ctxEl.dataset.empresaRazao||''),
-        pix: ctxEl.dataset.chavePix||''
-      };
+      try {
+        const ctxEl=document.getElementById('ctx');
+        if (!ctxEl) {
+          console.error('Elemento ctx não encontrado');
+          return;
+        }
+        
+        const ctx={
+          user: ctxEl.dataset.user||'',
+          devedor: ctxEl.dataset.devedor||'',
+          fantasia: ctxEl.dataset.empresaFantasia||'',
+          razao: ctxEl.dataset.empresaRazao||'',
+          empresa: (ctxEl.dataset.empresaFantasia||ctxEl.dataset.empresaRazao||''),
+          pix: ctxEl.dataset.chavePix||''
+        };
 
-      const { total, capital, juros, firstISO, maxDias } = lerTotaisEVencimentoEAtraso();
+        const { total, capital, juros, firstISO, maxDias } = lerTotaisEVencimentoEAtraso();
+        
+        console.log('Valores calculados:', { total, capital, juros, firstISO, maxDias });
 
-      const pctAvista  = Number(document.getElementById('pctAvista').value || 0);
-      const pctParc    = Number(document.getElementById('pctParc').value || 0);
-      const pctEntrada = Number(document.getElementById('pctEntrada').value || 0);
-      const qtdParcelas= Math.max(1, parseInt(document.getElementById('qtdParcelas').value || '1', 10));
-      const dataEntrada= document.getElementById('dataEntrada').value || '';
+        const pctAvista  = Number(document.getElementById('pctAvista')?.value || 0);
+        const pctParc    = Number(document.getElementById('pctParc')?.value || 0);
+        const pctEntrada = Number(document.getElementById('pctEntrada')?.value || 0);
+        const qtdParcelas= Math.max(1, parseInt(document.getElementById('qtdParcelas')?.value || '1', 10));
+        const dataEntrada= document.getElementById('dataEntrada')?.value || '';
 
-      // DESCONTO SÓ NOS JUROS
-      const jurosAvista = Math.max(0, juros * (1 - pctAvista/100));
-      const jurosParcel = Math.max(0, juros * (1 - pctParc/100));
+        console.log('Parâmetros:', { pctAvista, pctParc, pctEntrada, qtdParcelas, dataEntrada });
 
-      let valorAvista, totalProposta, valorEntrada, valorParcela;
-      if(modoManual){
-        valorAvista   = parseBRL(document.getElementById('valorAvista').value);
-        totalProposta = parseBRL(document.getElementById('totalProposta').value);
-        valorEntrada  = parseBRL(document.getElementById('valorEntrada').value);
-        valorParcela  = parseBRL(document.getElementById('valorParcela').value);
-      }else{
-        valorAvista   = capital + jurosAvista;
-        totalProposta = capital + jurosParcel;
-        valorEntrada  = totalProposta * (pctEntrada/100);
-        valorParcela  = (totalProposta - valorEntrada) / qtdParcelas;
+        // DESCONTO SÓ NOS JUROS
+        const jurosAvista = Math.max(0, juros * (1 - pctAvista/100));
+        const jurosParcel = Math.max(0, juros * (1 - pctParc/100));
 
-        document.getElementById('valorAvista').value   = moedaBRL(valorAvista);
-        document.getElementById('totalProposta').value = moedaBRL(totalProposta);
-        document.getElementById('valorEntrada').value  = moedaBRL(valorEntrada);
-        document.getElementById('valorParcela').value  = moedaBRL(valorParcela);
+        let valorAvista, totalProposta, valorEntrada, valorParcela;
+        if(modoManual){
+          valorAvista   = parseBRL(document.getElementById('valorAvista')?.value || '0');
+          totalProposta = parseBRL(document.getElementById('totalProposta')?.value || '0');
+          valorEntrada  = parseBRL(document.getElementById('valorEntrada')?.value || '0');
+          valorParcela  = parseBRL(document.getElementById('valorParcela')?.value || '0');
+        }else{
+          valorAvista   = capital + jurosAvista;
+          totalProposta = capital + jurosParcel;
+          valorEntrada  = totalProposta * (pctEntrada/100);
+          valorParcela  = qtdParcelas > 0 ? (totalProposta - valorEntrada) / qtdParcelas : 0;
+
+          console.log('Valores calculados:', { valorAvista, totalProposta, valorEntrada, valorParcela });
+
+          // Atualizar campos apenas se existirem
+          const valorAvistaEl = document.getElementById('valorAvista');
+          const totalPropostaEl = document.getElementById('totalProposta');
+          const valorEntradaEl = document.getElementById('valorEntrada');
+          const valorParcelaEl = document.getElementById('valorParcela');
+
+          if (valorAvistaEl) valorAvistaEl.value = moedaBRL(valorAvista);
+          if (totalPropostaEl) totalPropostaEl.value = moedaBRL(totalProposta);
+          if (valorEntradaEl) valorEntradaEl.value = moedaBRL(valorEntrada);
+          if (valorParcelaEl) valorParcelaEl.value = moedaBRL(valorParcela);
+        }
+
+        montarTabelaParcelas(qtdParcelas, dataEntrada, valorParcela);
+
+        // texto interno (CREDOR) → salvo/copiar
+        const previewEl = document.getElementById('previewInterno');
+        if (previewEl) {
+          previewEl.value = montarTextoInterno(ctx, total, capital, juros,
+                             pctAvista, pctParc,
+                             valorAvista, totalProposta,
+                             dataEntrada, valorEntrada, qtdParcelas, valorParcela,
+                             firstISO, maxDias);
+        }
+
+        sincronizarHidden();
+      } catch (error) {
+        console.error('Erro em atualizarCalculos:', error);
       }
-
-      montarTabelaParcelas(qtdParcelas, dataEntrada, valorParcela);
-
-      // texto interno (CREDOR) → salvo/copiar
-      document.getElementById('previewInterno').value =
-        montarTextoInterno(ctx, total, capital, juros,
-                           pctAvista, pctParc,
-                           valorAvista, totalProposta,
-                           dataEntrada, valorEntrada, qtdParcelas, valorParcela,
-                           firstISO, maxDias);
-
-      sincronizarHidden();
     }
 
     function aplicarAtalho(tipo){
@@ -664,7 +737,17 @@
     document.getElementById('previewInterno').addEventListener('input', sincronizarHidden);
     document.getElementById('formSalvarDetalhamento').addEventListener('submit', sincronizarHidden);
 
-    document.addEventListener('DOMContentLoaded', ()=>{ toggleEdicaoManual(); atualizarCalculos(); });
+    document.addEventListener('DOMContentLoaded', ()=>{ 
+      console.log('DOM carregado, inicializando cálculos...');
+      toggleEdicaoManual(); 
+      atualizarCalculos(); 
+      
+      // Força recálculo após um pequeno delay para garantir que todos os elementos estejam prontos
+      setTimeout(() => {
+        console.log('Recalculando após delay...');
+        atualizarCalculos();
+      }, 500);
+    });
   </script>
   <!-- =================== FIM GERAR PROPOSTA AO CREDOR =================== -->
 
