@@ -446,6 +446,11 @@
         <button type="button" class="btn btn-primary" onclick="salvarPropostaAcordo()">
           <i class="fas fa-save"></i> Salvar Proposta de Acordo
         </button>
+        
+        <!-- Botão de Debug Temporário -->
+        <button type="button" class="btn btn-warning" onclick="debugCampos()">
+          <i class="fas fa-bug"></i> Debug Campos
+        </button>
       </div>
       <small class="text-muted d-block mt-2">
         Observação: o texto acima é <strong>apenas para o CREDOR</strong>. Não há envio por WhatsApp desta proposta.
@@ -453,7 +458,29 @@
     </div>
   </div>
 
-  <style>.badge{font-size:.9rem}</style>
+  <style>
+    .badge{font-size:.9rem}
+    
+    /* Garantir que os campos calculados sejam visíveis */
+    #valorAvista, #totalProposta, #valorEntrada, #valorParcela {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    /* Garantir que a tabela de cronograma seja visível */
+    #tabelaParcelas {
+      display: table !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    /* Garantir que o checkbox de edição manual seja visível */
+    #editarManual {
+      display: block !important;
+      visibility: visible !important;
+    }
+  </style>
   <script>
     // ===== Utils
     const moedaBRL = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v||0));
@@ -462,6 +489,51 @@
     const fmtDateBR = iso => { if(!iso) return '-'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
     const parseBRDateToISO = br => { if(!br||!/^\d{2}\/\d{2}\/\d{4}$/.test(br)) return ''; const [d,m,y]=br.split('/'); return `${y}-${m}-${d}`; };
     const addMonths = (iso, m)=>{ if(!iso) return ''; const [y,mo,d]=iso.split('-').map(Number); const dt=new Date(y,mo-1,d); dt.setMonth(dt.getMonth()+m); return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}-${pad2(dt.getDate())}`; };
+
+    // ===== Função para garantir visibilidade dos campos
+    function garantirVisibilidadeCampos() {
+      const campos = ['valorAvista', 'totalProposta', 'valorEntrada', 'valorParcela', 'editarManual', 'tabelaParcelas'];
+      campos.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.style.display = 'block';
+          el.style.visibility = 'visible';
+          el.style.opacity = '1';
+          console.log(`Campo ${id} forçado a ser visível`);
+        }
+      });
+    }
+
+    // ===== Função de debug para verificar campos
+    function debugCampos() {
+      console.log('=== DEBUG DOS CAMPOS ===');
+      
+      const campos = ['valorAvista', 'totalProposta', 'valorEntrada', 'valorParcela', 'editarManual', 'tabelaParcelas'];
+      campos.forEach(id => {
+        const el = document.getElementById(id);
+        console.log(`\nCampo: ${id}`);
+        console.log('  - Existe:', !!el);
+        if (el) {
+          console.log('  - Elemento:', el);
+          console.log('  - Visível:', el.offsetParent !== null);
+          console.log('  - Display:', window.getComputedStyle(el).display);
+          console.log('  - Visibility:', window.getComputedStyle(el).visibility);
+          console.log('  - Opacity:', window.getComputedStyle(el).opacity);
+          console.log('  - Position:', window.getComputedStyle(el).position);
+          console.log('  - Z-index:', window.getComputedStyle(el).zIndex);
+          console.log('  - Parent:', el.parentElement);
+          console.log('  - Rect:', el.getBoundingClientRect());
+        }
+      });
+      
+      // Forçar visibilidade
+      garantirVisibilidadeCampos();
+      
+      // Tentar recalcular
+      atualizarCalculos();
+      
+      alert('Debug executado! Verifique o console (F12) para detalhes.');
+    }
 
     // ===== Extrai títulos das tabelas (entrada + associados)
     function extrairTitulos(){
@@ -739,13 +811,38 @@
 
     document.addEventListener('DOMContentLoaded', ()=>{ 
       console.log('DOM carregado, inicializando cálculos...');
+      
+      // Garantir que os campos sejam visíveis
+      garantirVisibilidadeCampos();
+      
+      // Verificar se os campos existem
+      const campos = ['valorAvista', 'totalProposta', 'valorEntrada', 'valorParcela', 'editarManual', 'tabelaParcelas'];
+      campos.forEach(id => {
+        const el = document.getElementById(id);
+        console.log(`Campo ${id}:`, el ? 'EXISTE' : 'NÃO EXISTE', el);
+        if (el) {
+          console.log(`  - Visível:`, el.offsetParent !== null);
+          console.log(`  - Display:`, window.getComputedStyle(el).display);
+          console.log(`  - Visibility:`, window.getComputedStyle(el).visibility);
+        }
+      });
+      
       toggleEdicaoManual(); 
       atualizarCalculos(); 
       
       // Força recálculo após um pequeno delay para garantir que todos os elementos estejam prontos
       setTimeout(() => {
         console.log('Recalculando após delay...');
+        garantirVisibilidadeCampos(); // Garantir visibilidade novamente
         atualizarCalculos();
+        
+        // Verificar novamente após o delay
+        campos.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            console.log(`Campo ${id} após delay:`, 'EXISTE', 'Visível:', el.offsetParent !== null);
+          }
+        });
       }, 500);
     });
   </script>
