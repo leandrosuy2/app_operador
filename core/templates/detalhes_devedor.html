@@ -434,15 +434,18 @@
       <div class="d-flex gap-2 mt-3 flex-wrap">
         <!-- Copiar texto do CREDOR (clipboard) -->
         <button type="button" class="btn btn-outline-secondary" onclick="copiarTextoCredor()">
-          Copiar texto (Credor)
+          <i class="fas fa-copy"></i> Copiar texto (Credor)
         </button>
 
-        <!-- Salvar em Detalhamento (CREDOR) -->
-        <form id="formSalvarDetalhamento" method="post" action="{% url 'adicionar_follow_up' devedor.id %}">
-          {% csrf_token %}
-          <input type="hidden" name="texto" id="textoHidden">
-          <button type="submit" class="btn btn-primary">Salvar em Detalhamento</button>
-        </form>
+        <!-- Campo 03: Enviar via WhatsApp -->
+        <button type="button" class="btn btn-success" onclick="abrirModalWhatsProposta()">
+          <i class="bi bi-whatsapp"></i> Enviar via WhatsApp
+        </button>
+
+        <!-- Campo 04: Salvar Proposta de Acordo -->
+        <button type="button" class="btn btn-primary" onclick="salvarPropostaAcordo()">
+          <i class="fas fa-save"></i> Salvar Proposta de Acordo
+        </button>
       </div>
       <small class="text-muted d-block mt-2">
         Observação: o texto acima é <strong>apenas para o CREDOR</strong>. Não há envio por WhatsApp desta proposta.
@@ -565,24 +568,24 @@
       const linhas=[];
       for(let i=1;i<=qtdParcelas;i++){ const iso=addMonths(baseISO,i); linhas.push(`Parcela ${i}: ${moedaBRL(valorParcela)} (venc. ${fmtDateBR(iso)})`); }
       return [
-        "Prezados,",
-        "",
         "Apresentamos a seguinte proposta de pagamento:",
         `Devedor: ${unesc(ctx.devedor) || '-'}`,
-        "",
         `Empresa: ${unesc(ctx.fantasia||ctx.razao) || '-'}`,
-        `Base com juros (pendente + juros): ${moedaBRL(tot)}`,
-        `Capital (sem juros): ${moedaBRL(cap)}`,
-        `Juros apurados: ${moedaBRL(jur)}`,
-        `Primeiro vencimento do(s) título(s): ${primeiroVenc?fmtDateBR(primeiroVenc):'-'}`,
-        `Dias de atraso (máx.): ${maxAtraso}`,
-        `Desconto à vista (${pctAvista}% sobre juros) → Total à vista: ${moedaBRL(valorAvista)}`,
-        `Desconto parcelado (${pctParc}% sobre juros) → Total parcelado: ${moedaBRL(totalProposta)}`,
+        "",
+        `→ Total à vista: ${moedaBRL(valorAvista)}`,
+        "",
+        `→ Total parcelado: ${moedaBRL(totalProposta)}`,
         `Entrada em ${dataEntrada?fmtDateBR(dataEntrada):'-'}: ${moedaBRL(valorEntrada)}`,
         `Parcelas: ${qtdParcelas}x de ${moedaBRL(valorParcela)}`,
         "",
         "Cronograma:",
         ...linhas,
+        "",
+        "ATENÇÃO",
+        "",
+        "Todo e qualquer pagamento deverá ser feito diretamente ao lojista, de preferência presencialmente ou por meio da chave pix do mesmo *chave pix* (CAMINHO DA URL ADMIN: https://admin.negociarcobrancas.com.br/empresas/17/editar/)",
+        "",
+        "Ficamos no aguardo do envio do comprovante de pagamento para podermos registrar ao acordo e validar o mesmo.",
         "",
         "Atenciosamente,",
         (ctx.user||'').toString(),
@@ -1098,6 +1101,7 @@
         <button type="button" class="btn btn-outline-primary" data-opt="vencidas" onclick="escolherMsg('vencidas')">Vencidas</button>
         <button type="button" class="btn btn-outline-primary" data-opt="a_vencer" onclick="escolherMsg('a_vencer')">A vencer</button>
         <button type="button" class="btn btn-outline-primary" data-opt="quebra" onclick="escolherMsg('quebra')">Quebra de acordo</button>
+        <button type="button" class="btn btn-outline-success" data-opt="proposta" onclick="escolherMsg('proposta')">Proposta de Acordo</button>
       </div>
 
       <div class="accordion" id="accMsg">
@@ -1132,9 +1136,10 @@
     vencidas: `{{ msg_vencidas|default_if_none:''|escapejs }}`,
     a_vencer:`{{ msg_a_vencer|default_if_none:''|escapejs }}`,
     padrao:  `{{ msg_padrao|default_if_none:''|escapejs }}`,
-    quebra:  `{{ msg_quebra|default_if_none:''|escapejs }}`
+    quebra:  `{{ msg_quebra|default_if_none:''|escapejs }}`,
+    proposta: ''
   };
-  const LABEL_TEMPLATE = { padrao:'Padrão', vencidas:'Vencidas', a_vencer:'A vencer', quebra:'Quebra de acordo' };
+  const LABEL_TEMPLATE = { padrao:'Padrão', vencidas:'Vencidas', a_vencer:'A vencer', quebra:'Quebra de acordo', proposta:'Proposta de Acordo' };
   let ESCOLHA_ATUAL = 'padrao';
 
   /* ================== UI DO MODAL ================== */
@@ -1187,6 +1192,71 @@
       textarea.value = textoComCabecalho;
     }
   });
+
+  /* ================== PROPOSTA DE ACORDO ================== */
+  // Função para abrir modal do WhatsApp para proposta
+  function abrirModalWhatsProposta() {
+    const textoProposta = document.getElementById('previewInterno').value;
+    if (!textoProposta.trim()) {
+      alert('Gere uma proposta primeiro antes de enviar via WhatsApp.');
+      return;
+    }
+    
+    // Usa o mesmo modal existente, mas com o texto da proposta
+    const modal = document.getElementById('modalWhatsapp');
+    if (modal) {
+      // Atualiza as mensagens para incluir a proposta
+      MSGS_WHATS.proposta = textoProposta;
+      escolherMsg('proposta');
+      new bootstrap.Modal(modal).show();
+    }
+  }
+
+  // Função para salvar proposta de acordo
+  function salvarPropostaAcordo() {
+    const textoProposta = document.getElementById('previewInterno').value;
+    if (!textoProposta.trim()) {
+      alert('Gere uma proposta primeiro antes de salvar.');
+      return;
+    }
+
+    const operador = document.getElementById('ctx')?.dataset.user || 'Operador';
+    const agora = new Date();
+    const dataHora = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
+    const textoComCabecalho = `[PROPOSTA DE ACORDO - ${dataHora}] - ${operador}:\n\n${textoProposta}`;
+
+    // Salva via AJAX
+    const endpoint = "{% url 'adicionar_follow_up' devedor.id %}";
+    const csrf = getCookie('csrftoken');
+    
+    const body = new URLSearchParams({
+      'csrfmiddlewaretoken': csrf,
+      'texto': textoComCabecalho
+    });
+
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
+      body
+    })
+    .then(response => {
+      if (response.ok) {
+        alert('Proposta de acordo salva com sucesso!');
+        // Adiciona ao histórico sem recarregar a página
+        addFollowupToDOM(textoComCabecalho);
+      } else {
+        alert('Erro ao salvar proposta de acordo.');
+      }
+    })
+    .catch(error => {
+      console.error('Erro:', error);
+      alert('Erro ao salvar proposta de acordo.');
+    });
+  }
 
   /* ================== FOLLOW-UP ================== */
   // Salva o follow-up e retorna uma Promise
