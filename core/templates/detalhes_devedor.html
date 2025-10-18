@@ -451,6 +451,11 @@
         <button type="button" class="btn btn-warning" onclick="debugCampos()">
           <i class="fas fa-bug"></i> Debug Campos
         </button>
+        
+        <!-- Botão para testar com valores fictícios -->
+        <button type="button" class="btn btn-info" onclick="testarComValoresFicticios()">
+          <i class="fas fa-flask"></i> Testar Valores
+        </button>
       </div>
       <small class="text-muted d-block mt-2">
         Observação: o texto acima é <strong>apenas para o CREDOR</strong>. Não há envio por WhatsApp desta proposta.
@@ -482,6 +487,8 @@
     }
   </style>
   <script>
+    console.log('=== SCRIPT CARREGADO ===');
+    
     // ===== Utils
     const moedaBRL = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v||0));
     const parseBRL = s => { if(!s) return 0; s=(''+s).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.'); const n=Number(s); return isNaN(n)?0:n; };
@@ -533,6 +540,35 @@
       atualizarCalculos();
       
       alert('Debug executado! Verifique o console (F12) para detalhes.');
+    }
+
+    // ===== Função para testar com valores fictícios
+    function testarComValoresFicticios() {
+      console.log('=== TESTANDO COM VALORES FICTÍCIOS ===');
+      
+      // Simular dados de teste
+      const valorBaseEl = document.getElementById('valorBase');
+      if (valorBaseEl) {
+        valorBaseEl.dataset.total = '1000';
+        valorBaseEl.dataset.capital = '800';
+        valorBaseEl.value = 'R$ 1.000,00';
+        console.log('Valores fictícios aplicados ao valorBase');
+      }
+      
+      const valorCapitalEl = document.getElementById('valorCapital');
+      if (valorCapitalEl) {
+        valorCapitalEl.value = 'R$ 800,00';
+      }
+      
+      const valorJurosEl = document.getElementById('valorJuros');
+      if (valorJurosEl) {
+        valorJurosEl.value = 'R$ 200,00';
+      }
+      
+      // Tentar recalcular
+      atualizarCalculos();
+      
+      alert('Valores fictícios aplicados! Verifique se os cálculos funcionaram.');
     }
 
     // ===== Extrai títulos das tabelas (entrada + associados)
@@ -596,7 +632,16 @@
     // ===== Lê totais + fallback
     function lerTotaisEVencimentoEAtraso(){
       try {
+        console.log('=== INICIANDO lerTotaisEVencimentoEAtraso ===');
+        
         const el = document.getElementById('valorBase');
+        console.log('Elemento valorBase encontrado:', !!el);
+        
+        if (el) {
+          console.log('Dataset do valorBase:', el.dataset);
+          console.log('Valor atual do campo:', el.value);
+        }
+        
         const totalContext = Number(el?.dataset.total || 0);
         const capitalContext = el?.dataset.capital !== '' ? Number(el.dataset.capital) : NaN;
 
@@ -718,6 +763,8 @@
 
     function atualizarCalculos(){
       try {
+        console.log('=== INICIANDO atualizarCalculos ===');
+        
         const ctxEl=document.getElementById('ctx');
         if (!ctxEl) {
           console.error('Elemento ctx não encontrado');
