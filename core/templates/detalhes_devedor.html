@@ -1015,11 +1015,17 @@
 <div class="card mt-4">
   <div class="card-header bg-secondary text-white"><h3>Detalhamento</h3></div>
   <div class="card-body">
-    <form method="post" action="{% url 'adicionar_follow_up' devedor.id %}">
+    <form method="post" action="{% url 'adicionar_follow_up' devedor.id %}" id="formDetalhamento">
       {% csrf_token %}
       <div class="mb-3">
         <label for="texto" class="form-label"><strong>Novo Detalhamento:</strong></label>
         <textarea id="texto" name="texto" class="form-control" rows="3" placeholder="Digite aqui o histórico do WhatsApp ou informações relevantes."></textarea>
+        <div class="form-text">
+          <small class="text-muted">
+            <i class="fas fa-info-circle"></i> 
+            O nome do operador e a data/hora serão adicionados automaticamente ao salvar.
+          </small>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary">Adicionar Detalhamento</button>
     </form>
@@ -1162,6 +1168,25 @@
   function escapeHTML(s){
     return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   }
+
+  /* ================== DETALHAMENTO MANUAL ================== */
+  // Intercepta o envio do formulário de detalhamento para adicionar operador e timestamp
+  document.getElementById('formDetalhamento')?.addEventListener('submit', function(e) {
+    const textarea = document.getElementById('texto');
+    const textoOriginal = textarea.value.trim();
+    
+    if (textoOriginal) {
+      const operador = document.getElementById('ctx')?.dataset.user || 'Operador';
+      const agora = new Date();
+      const dataHora = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      const textoComCabecalho = `[${dataHora}] - ${operador}:\n${textoOriginal}`;
+      textarea.value = textoComCabecalho;
+    }
+  });
 
   /* ================== FOLLOW-UP ================== */
   // Salva o follow-up e retorna uma Promise
