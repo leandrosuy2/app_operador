@@ -564,8 +564,19 @@ def dashboard(request):
     with connection.cursor() as cursor:
         cursor.execute(parcelas_proximas_query, [data_fim_5_dias])
         parcelas_proximas_rows = cursor.fetchall()
+        print(f"DEBUG - Resultado da query principal: {len(parcelas_proximas_rows)} parcelas encontradas")
+        if parcelas_proximas_rows:
+            print(f"DEBUG - Primeira parcela encontrada: {parcelas_proximas_rows[0]}")
+        else:
+            print("DEBUG - Nenhuma parcela encontrada pela query principal")
     
-    # Debug: vamos verificar se há parcelas no banco
+    # Debug detalhado: vamos verificar se há parcelas no banco
+    print("=" * 80)
+    print("DEBUG PARCELAS PRÓXIMAS DO VENCIMENTO")
+    print("=" * 80)
+    print(f"Data atual: {hoje}")
+    print(f"Data fim (5 dias): {data_fim_5_dias}")
+    
     debug_query = """
         SELECT COUNT(*) as total_parcelas,
                COUNT(CASE WHEN status = 'PENDENTE' THEN 1 END) as pendentes,
@@ -591,6 +602,50 @@ def dashboard(request):
         cursor.execute(debug_query_all)
         debug_all_result = cursor.fetchall()
         print(f"DEBUG - Primeiras 10 parcelas: {debug_all_result}")
+    
+    # Verificar se existem parcelas com status PENDENTE
+    debug_pendentes = """
+        SELECT p.id, p.status, p.data_vencimento, p.valor, 
+               DATEDIFF(p.data_vencimento, CURDATE()) as dias_para_vencimento
+        FROM core_parcelamento p
+        WHERE p.status = 'PENDENTE'
+        ORDER BY p.data_vencimento ASC
+        LIMIT 10
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(debug_pendentes)
+        debug_pendentes_result = cursor.fetchall()
+        print(f"DEBUG - Parcelas PENDENTES: {debug_pendentes_result}")
+    
+    # Verificar se existem parcelas próximas do vencimento (sem filtro de empresa)
+    debug_proximas_simples = """
+        SELECT p.id, p.status, p.data_vencimento, p.valor, 
+               DATEDIFF(p.data_vencimento, CURDATE()) as dias_para_vencimento
+        FROM core_parcelamento p
+        WHERE p.status = 'PENDENTE'
+            AND p.data_vencimento BETWEEN CURDATE() AND %s
+        ORDER BY p.data_vencimento ASC
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(debug_proximas_simples, [data_fim_5_dias])
+        debug_proximas_simples_result = cursor.fetchall()
+        print(f"DEBUG - Parcelas próximas (sem filtro empresa): {debug_proximas_simples_result}")
+    
+    # Verificar se existem empresas ativas
+    debug_empresas = """
+        SELECT COUNT(*) as total_empresas,
+               COUNT(CASE WHEN status_empresa = 1 THEN 1 END) as empresas_ativas
+        FROM core_empresa
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(debug_empresas)
+        debug_empresas_result = cursor.fetchone()
+        print(f"DEBUG Empresas - Total: {debug_empresas_result[0]}, Ativas: {debug_empresas_result[1]}")
+    
+    print("=" * 80)
     
     parcelas_proximas_data = []
     for row in parcelas_proximas_rows:
