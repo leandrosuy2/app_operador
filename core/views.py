@@ -535,6 +535,7 @@ def dashboard(request):
     # =========================================================
     data_fim_5_dias = hoje + timedelta(days=5)
     
+    # Query melhorada com debug e tratamento de casos
     parcelas_proximas_query = """
         SELECT
             p.id,
@@ -542,27 +543,54 @@ def dashboard(request):
             p.data_vencimento,
             p.valor,
             p.status,
-            d.nome AS devedor_nome,
+            COALESCE(d.nome, d.razao_social, 'Nome não informado') AS devedor_nome,
             d.cpf,
             d.cnpj,
-            e.nome_fantasia AS empresa_nome,
-            t.operador,
+            COALESCE(e.nome_fantasia, e.razao_social, 'Empresa não informada') AS empresa_nome,
+            COALESCE(t.operador, 'Não atribuído') AS operador,
             a.contato,
             DATEDIFF(p.data_vencimento, CURDATE()) AS dias_para_vencimento
         FROM core_parcelamento p
-        JOIN core_acordo a ON p.acordo_id = a.id
-        JOIN titulo t ON a.titulo_id = t.id
-        JOIN devedores d ON t.devedor_id = d.id
-        JOIN core_empresa e ON d.empresa_id = e.id
+        LEFT JOIN core_acordo a ON p.acordo_id = a.id
+        LEFT JOIN titulo t ON a.titulo_id = t.id
+        LEFT JOIN devedores d ON t.devedor_id = d.id
+        LEFT JOIN core_empresa e ON d.empresa_id = e.id
         WHERE p.status = 'PENDENTE'
             AND p.data_vencimento BETWEEN CURDATE() AND %s
-            AND e.status_empresa = 1
+            AND (e.status_empresa = 1 OR e.status_empresa IS NULL)
         ORDER BY p.data_vencimento ASC, p.parcela_numero ASC
     """
     
     with connection.cursor() as cursor:
         cursor.execute(parcelas_proximas_query, [data_fim_5_dias])
         parcelas_proximas_rows = cursor.fetchall()
+    
+    # Debug: vamos verificar se há parcelas no banco
+    debug_query = """
+        SELECT COUNT(*) as total_parcelas,
+               COUNT(CASE WHEN status = 'PENDENTE' THEN 1 END) as pendentes,
+               COUNT(CASE WHEN data_vencimento BETWEEN CURDATE() AND %s THEN 1 END) as proximas_5_dias
+        FROM core_parcelamento
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(debug_query, [data_fim_5_dias])
+        debug_result = cursor.fetchone()
+        print(f"DEBUG Parcelas - Total: {debug_result[0]}, Pendentes: {debug_result[1]}, Próximas 5 dias: {debug_result[2]}")
+    
+    # Query adicional para verificar parcelas sem filtros restritivos
+    debug_query_all = """
+        SELECT p.id, p.status, p.data_vencimento, p.valor, 
+               DATEDIFF(p.data_vencimento, CURDATE()) as dias_para_vencimento
+        FROM core_parcelamento p
+        ORDER BY p.data_vencimento ASC
+        LIMIT 10
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(debug_query_all)
+        debug_all_result = cursor.fetchall()
+        print(f"DEBUG - Primeiras 10 parcelas: {debug_all_result}")
     
     parcelas_proximas_data = []
     for row in parcelas_proximas_rows:
@@ -601,6 +629,7 @@ def dashboard(request):
         "agenda_pendentes_paginated": agenda_pendentes_paginated,
         "negociados_paginated": negociados_paginated,
         "parcelas_proximas_data": parcelas_proximas_data,
+        "data_fim_5_dias": data_fim_5_dias,
 
         "query": query,
         "quitados_hoje": quitados_hoje,
