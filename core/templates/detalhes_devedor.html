@@ -44,6 +44,10 @@
           <i class="fas fa-arrow-right"></i> Próximo Cliente
         </a>
       {% endif %}
+      <!-- Botão Gerar Acordo -->
+      <a href="{% url 'realizar_acordo' titulo.id %}" class="btn btn-success">
+        <i class="fas fa-handshake"></i> Gerar Acordo
+      </a>
       <!-- Botão Atualizar Devedor -->
       <button id="btn-atualizar-devedor"
               class="btn btn-info btn-sm d-flex align-items-center"
