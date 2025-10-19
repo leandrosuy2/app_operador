@@ -450,6 +450,11 @@
         <button type="button" class="btn btn-primary" onclick="salvarPropostaAcordo()">
           <i class="fas fa-save"></i> Salvar Proposta de Acordo
         </button>
+
+        <!-- Campo 05: Gerar Acordo -->
+        <a href="{% url 'realizar_acordo' titulo.id %}" class="btn btn-success">
+          <i class="fas fa-handshake"></i> Gerar Acordo
+        </a>
         
         <!-- Botão de Debug Temporário -->
         <!-- <button type="button" class="btn btn-warning" onclick="debugCampos()">
