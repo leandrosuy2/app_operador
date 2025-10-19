@@ -218,24 +218,24 @@
   </form>
 
   <h2 class="mt-4 text-center fw-bold" style="font-size:24px;color:#e67e22;text-transform:uppercase;letter-spacing:1px;">
-    <i class="fas fa-calendar-alt me-2" style="color:#d35400;"></i> Parcelas Próximas do Vencimento (5 dias)
+    <i class="fas fa-calendar-alt me-2" style="color:#d35400;"></i> Parcelas Próximas do Vencimento (7 dias - TODOS OS STATUS)
   </h2>
 
   <!-- DEBUG INFO -->
   <div class="alert alert-info">
     <strong>DEBUG INFO:</strong><br>
     Data atual: {{ hoje }}<br>
-    Data fim (5 dias): {{ data_fim_5_dias }}<br>
+    Data fim (7 dias): {{ data_fim_7_dias }}<br>
     Total de parcelas encontradas: {{ parcelas_proximas_data|length }}<br>
     {% if parcelas_proximas_data %}
-      Primeira parcela: {{ parcelas_proximas_data.0.devedor_nome }} - {{ parcelas_proximas_data.0.data_vencimento }}
+      Primeira parcela: {{ parcelas_proximas_data.0.devedor_nome }} - {{ parcelas_proximas_data.0.data_vencimento }} (Status: {{ parcelas_proximas_data.0.status }})
     {% endif %}
   </div>
 
   {% if parcelas_proximas_data %}
     <div class="alert alert-success mt-3">
       <i class="fas fa-check-circle me-2"></i>
-      <strong>{{ parcelas_proximas_data|length }}</strong> parcela(s) encontrada(s) vencendo nos próximos 5 dias.
+      <strong>{{ parcelas_proximas_data|length }}</strong> parcela(s) encontrada(s) vencendo nos próximos 7 dias.
     </div>
     
     <table class="table table-hover table-bordered mt-3" style="font-size:.8rem;">
@@ -246,6 +246,7 @@
           <th>Parcela</th>
           <th>Vencimento</th>
           <th>Valor</th>
+          <th>Status</th>
           <th>Dias Restantes</th>
           <th>Operador</th>
           <th class="text-center">Ações</th>
@@ -259,6 +260,15 @@
           <td><b>{{ parcela.parcela_numero }}</b></td>
           <td><b>{{ parcela.data_vencimento|date:"d/m/Y" }}</b></td>
           <td><b>R$ {{ parcela.valor|floatformat:2 }}</b></td>
+          <td>
+            {% if parcela.status == 'PENDENTE' %}
+              <span class="badge bg-warning">Pendente</span>
+            {% elif parcela.status == 'PAGO' %}
+              <span class="badge bg-success">Pago</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ parcela.status }}</span>
+            {% endif %}
+          </td>
           <td>
             {% if parcela.dias_para_vencimento == 0 %}
               <span class="badge bg-danger">Hoje</span>
@@ -280,10 +290,10 @@
   {% else %}
     <div class="alert alert-warning mt-3">
       <i class="fas fa-exclamation-triangle me-2"></i>
-      <strong>Nenhuma parcela próxima do vencimento encontrada nos próximos 5 dias.</strong>
+      <strong>Nenhuma parcela próxima do vencimento encontrada nos próximos 7 dias.</strong>
       <br>
       <small class="text-muted">
-        Verifique se existem parcelas com status 'PENDENTE' e data de vencimento entre hoje e {{ data_fim_5_dias|date:"d/m/Y" }}.
+        Verifique se existem parcelas com data de vencimento entre hoje e {{ data_fim_7_dias|date:"d/m/Y" }} (TODOS OS STATUS).
       </small>
     </div>
   {% endif %}

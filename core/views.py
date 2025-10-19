@@ -535,13 +535,13 @@ def dashboard(request):
     negociados_paginated = paginator_negociados.get_page(page_number_negociados)
 
     # =========================================================
-    # Parcelas próximas do vencimento (próximos 5 dias)
+    # Parcelas próximas do vencimento (próximos 7 dias - TODOS OS STATUS)
     # =========================================================
     print("🔍 INICIANDO BUSCA DE PARCELAS PRÓXIMAS!")
-    data_fim_5_dias = hoje + timedelta(days=5)
-    print(f"🔍 Data fim 5 dias: {data_fim_5_dias}")
+    data_fim_7_dias = hoje + timedelta(days=7)
+    print(f"🔍 Data fim 7 dias: {data_fim_7_dias}")
     
-    # Query melhorada com debug e tratamento de casos
+    # Query melhorada - 7 dias e TODOS os status
     parcelas_proximas_query = """
         SELECT
             p.id,
@@ -561,14 +561,13 @@ def dashboard(request):
         LEFT JOIN titulo t ON a.titulo_id = t.id
         LEFT JOIN devedores d ON t.devedor_id = d.id
         LEFT JOIN core_empresa e ON d.empresa_id = e.id
-        WHERE p.status = 'PENDENTE'
-            AND p.data_vencimento BETWEEN CURDATE() AND %s
+        WHERE p.data_vencimento BETWEEN CURDATE() AND %s
             AND (e.status_empresa = 1 OR e.status_empresa IS NULL)
         ORDER BY p.data_vencimento ASC, p.parcela_numero ASC
     """
     
     with connection.cursor() as cursor:
-        cursor.execute(parcelas_proximas_query, [data_fim_5_dias])
+        cursor.execute(parcelas_proximas_query, [data_fim_7_dias])
         parcelas_proximas_rows = cursor.fetchall()
         print(f"DEBUG - Resultado da query principal: {len(parcelas_proximas_rows)} parcelas encontradas")
         if parcelas_proximas_rows:
@@ -581,19 +580,19 @@ def dashboard(request):
     print("DEBUG PARCELAS PRÓXIMAS DO VENCIMENTO")
     print("=" * 80)
     print(f"Data atual: {hoje}")
-    print(f"Data fim (5 dias): {data_fim_5_dias}")
+    print(f"Data fim (7 dias): {data_fim_7_dias}")
     
     debug_query = """
         SELECT COUNT(*) as total_parcelas,
                COUNT(CASE WHEN status = 'PENDENTE' THEN 1 END) as pendentes,
-               COUNT(CASE WHEN data_vencimento BETWEEN CURDATE() AND %s THEN 1 END) as proximas_5_dias
+               COUNT(CASE WHEN data_vencimento BETWEEN CURDATE() AND %s THEN 1 END) as proximas_7_dias
         FROM core_parcelamento
     """
     
     with connection.cursor() as cursor:
-        cursor.execute(debug_query, [data_fim_5_dias])
+        cursor.execute(debug_query, [data_fim_7_dias])
         debug_result = cursor.fetchone()
-        print(f"DEBUG Parcelas - Total: {debug_result[0]}, Pendentes: {debug_result[1]}, Próximas 5 dias: {debug_result[2]}")
+        print(f"DEBUG Parcelas - Total: {debug_result[0]}, Pendentes: {debug_result[1]}, Próximas 7 dias: {debug_result[2]}")
     
     # Query adicional para verificar parcelas sem filtros restritivos
     debug_query_all = """
@@ -624,20 +623,19 @@ def dashboard(request):
         debug_pendentes_result = cursor.fetchall()
         print(f"DEBUG - Parcelas PENDENTES: {debug_pendentes_result}")
     
-    # Verificar se existem parcelas próximas do vencimento (sem filtro de empresa)
+    # Verificar se existem parcelas próximas do vencimento (TODOS OS STATUS)
     debug_proximas_simples = """
         SELECT p.id, p.status, p.data_vencimento, p.valor, 
                DATEDIFF(p.data_vencimento, CURDATE()) as dias_para_vencimento
         FROM core_parcelamento p
-        WHERE p.status = 'PENDENTE'
-            AND p.data_vencimento BETWEEN CURDATE() AND %s
+        WHERE p.data_vencimento BETWEEN CURDATE() AND %s
         ORDER BY p.data_vencimento ASC
     """
     
     with connection.cursor() as cursor:
-        cursor.execute(debug_proximas_simples, [data_fim_5_dias])
+        cursor.execute(debug_proximas_simples, [data_fim_7_dias])
         debug_proximas_simples_result = cursor.fetchall()
-        print(f"DEBUG - Parcelas próximas (sem filtro empresa): {debug_proximas_simples_result}")
+        print(f"DEBUG - Parcelas próximas (TODOS OS STATUS): {debug_proximas_simples_result}")
     
     # Verificar se existem empresas ativas
     debug_empresas = """
@@ -690,7 +688,7 @@ def dashboard(request):
         "agenda_pendentes_paginated": agenda_pendentes_paginated,
         "negociados_paginated": negociados_paginated,
         "parcelas_proximas_data": parcelas_proximas_data,
-        "data_fim_5_dias": data_fim_5_dias,
+        "data_fim_7_dias": data_fim_7_dias,
         "hoje": hoje,
 
         "query": query,
