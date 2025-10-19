@@ -147,6 +147,10 @@ def format_brl(v):
 
 @login_required
 def dashboard(request):
+    print("🚀 DASHBOARD VIEW CHAMADA!")
+    print("🚀 DASHBOARD VIEW CHAMADA!")
+    print("🚀 DASHBOARD VIEW CHAMADA!")
+    
     # -------------------------------------------------------
     # Datas (em horário local) para evitar divergências de TZ
     # -------------------------------------------------------
@@ -533,7 +537,9 @@ def dashboard(request):
     # =========================================================
     # Parcelas próximas do vencimento (próximos 5 dias)
     # =========================================================
+    print("🔍 INICIANDO BUSCA DE PARCELAS PRÓXIMAS!")
     data_fim_5_dias = hoje + timedelta(days=5)
+    print(f"🔍 Data fim 5 dias: {data_fim_5_dias}")
     
     # Query melhorada com debug e tratamento de casos
     parcelas_proximas_query = """
