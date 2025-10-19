@@ -691,6 +691,7 @@ def dashboard(request):
         "negociados_paginated": negociados_paginated,
         "parcelas_proximas_data": parcelas_proximas_data,
         "data_fim_5_dias": data_fim_5_dias,
+        "hoje": hoje,
 
         "query": query,
         "quitados_hoje": quitados_hoje,

@@ -221,6 +221,17 @@
     <i class="fas fa-calendar-alt me-2" style="color:#d35400;"></i> Parcelas Próximas do Vencimento (5 dias)
   </h2>
 
+  <!-- DEBUG INFO -->
+  <div class="alert alert-info">
+    <strong>DEBUG INFO:</strong><br>
+    Data atual: {{ hoje }}<br>
+    Data fim (5 dias): {{ data_fim_5_dias }}<br>
+    Total de parcelas encontradas: {{ parcelas_proximas_data|length }}<br>
+    {% if parcelas_proximas_data %}
+      Primeira parcela: {{ parcelas_proximas_data.0.devedor_nome }} - {{ parcelas_proximas_data.0.data_vencimento }}
+    {% endif %}
+  </div>
+
   {% if parcelas_proximas_data %}
     <div class="alert alert-success mt-3">
       <i class="fas fa-check-circle me-2"></i>
