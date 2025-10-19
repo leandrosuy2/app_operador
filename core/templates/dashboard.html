@@ -218,24 +218,15 @@
   </form>
 
   <h2 class="mt-4 text-center fw-bold" style="font-size:24px;color:#e67e22;text-transform:uppercase;letter-spacing:1px;">
-    <i class="fas fa-calendar-alt me-2" style="color:#d35400;"></i> Títulos Próximos do Vencimento (7 dias - TODOS OS STATUS)
+    <i class="fas fa-calendar-alt me-2" style="color:#d35400;"></i> Títulos Próximos do Vencimento (5 dias)
   </h2>
 
-  <!-- DEBUG INFO -->
-  <div class="alert alert-info">
-    <strong>DEBUG INFO:</strong><br>
-    Data atual: {{ hoje }}<br>
-    Data fim (7 dias): {{ data_fim_7_dias }}<br>
-    Total de parcelas encontradas: {{ parcelas_proximas_data|length }}<br>
-    {% if parcelas_proximas_data %}
-      Primeira parcela: {{ parcelas_proximas_data.0.devedor_nome }} - {{ parcelas_proximas_data.0.data_vencimento }} (Status: {{ parcelas_proximas_data.0.status }})
-    {% endif %}
-  </div>
-
-  {% if parcelas_proximas_data %}
-    <div class="alert alert-success mt-3">
-      <i class="fas fa-check-circle me-2"></i>
-      <strong>{{ parcelas_proximas_data|length }}</strong> título(s) encontrado(s) vencendo nos próximos 7 dias.
+  {% if titulos_proximos_paginated and titulos_proximos_paginated.paginator.count %}
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <small class="text-muted">
+        Mostrando {{ titulos_proximos_paginated.start_index }}–{{ titulos_proximos_paginated.end_index }}
+        de {{ titulos_proximos_paginated.paginator.count }} títulos
+      </small>
     </div>
     
     <table class="table table-hover table-bordered mt-3" style="font-size:.8rem;">
@@ -253,47 +244,98 @@
         </tr>
       </thead>
       <tbody>
-        {% for parcela in parcelas_proximas_data %}
+        {% for titulo in titulos_proximos_paginated %}
         <tr>
-          <td><b>{{ parcela.devedor_nome|default:'Não informado' }}</b></td>
-          <td><b>{{ parcela.empresa_nome|default:'Não informado' }}</b></td>
-          <td><b>{{ parcela.parcela_numero }}</b></td>
-          <td><b>{{ parcela.data_vencimento|date:"d/m/Y" }}</b></td>
-          <td><b>R$ {{ parcela.valor|floatformat:2 }}</b></td>
+          <td><b>{{ titulo.devedor_nome|default:'Não informado' }}</b></td>
+          <td><b>{{ titulo.empresa_nome|default:'Não informado' }}</b></td>
+          <td><b>{{ titulo.parcela_numero }}</b></td>
+          <td><b>{{ titulo.data_vencimento|date:"d/m/Y" }}</b></td>
+          <td><b>R$ {{ titulo.valor|floatformat:2 }}</b></td>
           <td>
-            {% if parcela.status == 'PENDENTE' %}
+            {% if titulo.status == 'PENDENTE' %}
               <span class="badge bg-warning">Pendente</span>
-            {% elif parcela.status == 'PAGO' %}
+            {% elif titulo.status == 'PAGO' %}
               <span class="badge bg-success">Pago</span>
+            {% elif titulo.status == 'NEGOCIADO' %}
+              <span class="badge bg-info">Negociado</span>
             {% else %}
-              <span class="badge bg-secondary">{{ parcela.status }}</span>
+              <span class="badge bg-secondary">{{ titulo.status }}</span>
             {% endif %}
           </td>
           <td>
-            {% if parcela.dias_para_vencimento == 0 %}
+            {% if titulo.dias_para_vencimento == 0 %}
               <span class="badge bg-danger">Hoje</span>
-            {% elif parcela.dias_para_vencimento == 1 %}
+            {% elif titulo.dias_para_vencimento == 1 %}
               <span class="badge bg-warning">1 dia</span>
             {% else %}
-              <span class="badge bg-info">{{ parcela.dias_para_vencimento }} dias</span>
+              <span class="badge bg-info">{{ titulo.dias_para_vencimento }} dias</span>
             {% endif %}
           </td>
-          <td><b>{{ parcela.operador|default:'Não atribuído' }}</b></td>
+          <td><b>{{ titulo.operador|default:'Não atribuído' }}</b></td>
           <td class="text-center">
-            <a href="{% url 'detalhes_devedor' parcela.id %}" target="_blank" class="btn btn-sm btn-info">Visualizar</a>
-            <button class="btn btn-sm btn-success finalizar-btn" data-id="{{ parcela.id }}">Finalizar</button>
+            <a href="{% url 'detalhes_devedor' titulo.id %}" target="_blank" class="btn btn-sm btn-info">Visualizar</a>
+            <button class="btn btn-sm btn-success finalizar-btn" data-id="{{ titulo.id }}">Finalizar</button>
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+
+    <!-- Paginação -->
+    <nav aria-label="Paginação títulos próximos">
+      <ul class="pagination justify-content-center">
+        <li class="page-item {% if not titulos_proximos_paginated.has_previous %}disabled{% endif %}">
+          {% if titulos_proximos_paginated.has_previous %}
+            <a class="page-link" href="?{% if query %}query={{ query|urlencode }}&{% endif %}page_titulos=1" aria-label="Primeira">&laquo;</a>
+          {% else %}
+            <span class="page-link" aria-disabled="true">&laquo;</span>
+          {% endif %}
+        </li>
+
+        <li class="page-item {% if not titulos_proximos_paginated.has_previous %}disabled{% endif %}">
+          {% if titulos_proximos_paginated.has_previous %}
+            <a class="page-link" href="?{% if query %}query={{ query|urlencode }}&{% endif %}page_titulos={{ titulos_proximos_paginated.previous_page_number }}" aria-label="Anterior">&lsaquo;</a>
+          {% else %}
+            <span class="page-link" aria-disabled="true">&lsaquo;</span>
+          {% endif %}
+        </li>
+
+        {% for i in titulos_proximos_paginated.paginator.page_range %}
+          {% if i >= titulos_proximos_paginated.number|add:'-2' and i <= titulos_proximos_paginated.number|add:'2' %}
+            <li class="page-item {% if i == titulos_proximos_paginated.number %}active{% endif %}">
+              {% if i == titulos_proximos_paginated.number %}
+                <span class="page-link">{{ i }}</span>
+              {% else %}
+                <a class="page-link" href="?{% if query %}query={{ query|urlencode }}&{% endif %}page_titulos={{ i }}">{{ i }}</a>
+              {% endif %}
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not titulos_proximos_paginated.has_next %}disabled{% endif %}">
+          {% if titulos_proximos_paginated.has_next %}
+            <a class="page-link" href="?{% if query %}query={{ query|urlencode }}&{% endif %}page_titulos={{ titulos_proximos_paginated.next_page_number }}" aria-label="Próxima">&rsaquo;</a>
+          {% else %}
+            <span class="page-link" aria-disabled="true">&rsaquo;</span>
+          {% endif %}
+        </li>
+
+        <li class="page-item {% if not titulos_proximos_paginated.has_next %}disabled{% endif %}">
+          {% if titulos_proximos_paginated.has_next %}
+            <a class="page-link" href="?{% if query %}query={{ query|urlencode }}&{% endif %}page_titulos={{ titulos_proximos_paginated.paginator.num_pages }}" aria-label="Última">&raquo;</a>
+          {% else %}
+            <span class="page-link" aria-disabled="true">&raquo;</span>
+          {% endif %}
+        </li>
+      </ul>
+    </nav>
   {% else %}
     <div class="alert alert-warning mt-3">
       <i class="fas fa-exclamation-triangle me-2"></i>
-      <strong>Nenhum título próximo do vencimento encontrado nos próximos 7 dias.</strong>
+      <strong>Nenhum título próximo do vencimento encontrado nos próximos 5 dias.</strong>
       <br>
       <small class="text-muted">
-        Verifique se existem títulos com data de vencimento entre hoje e {{ data_fim_7_dias|date:"d/m/Y" }} (TODOS OS STATUS).
+        Verifique se existem títulos com data de vencimento entre hoje e {{ data_fim_5_dias|date:"d/m/Y" }}.
       </small>
     </div>
   {% endif %}
