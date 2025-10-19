@@ -541,29 +541,31 @@ def dashboard(request):
     data_fim_7_dias = hoje + timedelta(days=7)
     print(f"🔍 Data fim 7 dias: {data_fim_7_dias}")
     
-    # Query melhorada - 7 dias e TODOS os status
+    # Query alternativa - buscar na tabela titulo (onde estão os dados reais)
     parcelas_proximas_query = """
         SELECT
-            p.id,
-            p.parcela_numero,
-            p.data_vencimento,
-            p.valor,
-            p.status,
+            t.id,
+            1 as parcela_numero,
+            t.dataVencimento as data_vencimento,
+            t.valor,
+            CASE 
+                WHEN t.statusBaixa = 1 THEN 'PAGO'
+                WHEN t.statusBaixa = 3 THEN 'NEGOCIADO'
+                ELSE 'PENDENTE'
+            END as status,
             COALESCE(d.nome, d.razao_social, 'Nome não informado') AS devedor_nome,
             d.cpf,
             d.cnpj,
             COALESCE(e.nome_fantasia, e.razao_social, 'Empresa não informada') AS empresa_nome,
             COALESCE(t.operador, 'Não atribuído') AS operador,
-            a.contato,
-            DATEDIFF(p.data_vencimento, CURDATE()) AS dias_para_vencimento
-        FROM core_parcelamento p
-        LEFT JOIN core_acordo a ON p.acordo_id = a.id
-        LEFT JOIN titulo t ON a.titulo_id = t.id
+            '' as contato,
+            DATEDIFF(t.dataVencimento, CURDATE()) AS dias_para_vencimento
+        FROM titulo t
         LEFT JOIN devedores d ON t.devedor_id = d.id
         LEFT JOIN core_empresa e ON d.empresa_id = e.id
-        WHERE p.data_vencimento BETWEEN CURDATE() AND %s
+        WHERE t.dataVencimento BETWEEN CURDATE() AND %s
             AND (e.status_empresa = 1 OR e.status_empresa IS NULL)
-        ORDER BY p.data_vencimento ASC, p.parcela_numero ASC
+        ORDER BY t.dataVencimento ASC
     """
     
     with connection.cursor() as cursor:
@@ -582,7 +584,8 @@ def dashboard(request):
     print(f"Data atual: {hoje}")
     print(f"Data fim (7 dias): {data_fim_7_dias}")
     
-    debug_query = """
+    # Verificar se a tabela core_parcelamento existe e tem dados
+    debug_query_parcelamento = """
         SELECT COUNT(*) as total_parcelas,
                COUNT(CASE WHEN status = 'PENDENTE' THEN 1 END) as pendentes,
                COUNT(CASE WHEN data_vencimento BETWEEN CURDATE() AND %s THEN 1 END) as proximas_7_dias
@@ -590,9 +593,22 @@ def dashboard(request):
     """
     
     with connection.cursor() as cursor:
-        cursor.execute(debug_query, [data_fim_7_dias])
+        cursor.execute(debug_query_parcelamento, [data_fim_7_dias])
         debug_result = cursor.fetchone()
-        print(f"DEBUG Parcelas - Total: {debug_result[0]}, Pendentes: {debug_result[1]}, Próximas 7 dias: {debug_result[2]}")
+        print(f"DEBUG Parcelamento - Total: {debug_result[0]}, Pendentes: {debug_result[1]}, Próximas 7 dias: {debug_result[2]}")
+    
+    # Verificar se existem parcelas na tabela titulo (que tem os dados que aparecem)
+    debug_query_titulo = """
+        SELECT COUNT(*) as total_titulos,
+               COUNT(CASE WHEN statusBaixa = 3 THEN 1 END) as negociados,
+               COUNT(CASE WHEN dataVencimento BETWEEN CURDATE() AND %s THEN 1 END) as proximas_7_dias
+        FROM titulo
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(debug_query_titulo, [data_fim_7_dias])
+        debug_titulo_result = cursor.fetchone()
+        print(f"DEBUG Título - Total: {debug_titulo_result[0]}, Negociados: {debug_titulo_result[1]}, Próximas 7 dias: {debug_titulo_result[2]}")
     
     # Query adicional para verificar parcelas sem filtros restritivos
     debug_query_all = """
