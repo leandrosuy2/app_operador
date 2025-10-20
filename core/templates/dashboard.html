@@ -212,7 +212,7 @@
   <!-- Busca -->
   <form method="get" action="{% url 'dashboard' %}" class="mb-4 p-3 shadow rounded bg-light">
     <div class="input-group">
-      <input type="text" name="query" class="form-control border-primary fs-5" placeholder="🔍 Buscar por nome, CPF, CNPJ, Nome Fantasia,  etc." value="{{ query }}" style="box-shadow:0 0 10px rgba(0,123,255,.5);">
+      <input type="text" name="query" class="form-control border-primary fs-5" placeholder="🔍 Buscar por nome, CPF/CNPJ (com ou sem máscara) ou telefone" value="{{ query }}" style="box-shadow:0 0 10px rgba(0,123,255,.5);">
       <button type="submit" class="btn btn-primary fs-5 px-4" style="background:linear-gradient(135deg,#007bff,#0056b3); box-shadow:0 4px 10px rgba(0,123,255,.5);">Buscar</button>
     </div>
   </form>

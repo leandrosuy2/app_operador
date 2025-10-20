@@ -439,15 +439,47 @@ def dashboard(request):
     # Agenda de trabalho do dia - Pendentes (seu SQL original)
     # =========================================================
     if query:
+        # Termos para LIKE padrão (nome, fantasia, cpf/cnpj com máscara)
+        like_term = f"%{query}%"
+        # Somente dígitos para procurar telefone e cpf/cnpj sem máscara
+        digits = re.sub(r"\D", "", query)
+        digits_like = f"%{digits}%" if digits else None
+
+        # Monta filtro incluindo normalização de CPF/CNPJ e telefones (telefone, telefone1..telefone10)
         search_filter = """
             AND (
                 devedores.nome LIKE %s OR
                 core_empresa.nome_fantasia LIKE %s OR
                 devedores.cpf LIKE %s OR
-                devedores.cnpj LIKE %s
+                devedores.cnpj LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.cpf,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.cnpj,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone1,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone2,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone3,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone4,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone5,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone6,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone7,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone8,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone9,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(devedores.telefone10,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s
             )
         """
-        params = [f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"]
+
+        # Params na mesma ordem dos placeholders acima
+        params = [
+            like_term,                      # nome
+            like_term,                      # nome_fantasia
+            like_term,                      # cpf (mascarado)
+            like_term,                      # cnpj (mascarado)
+            digits_like or like_term,       # cpf normalizado
+            digits_like or like_term,       # cnpj normalizado
+        ]
+        # Telefones normalizados
+        for _ in range(11):
+            params.append(digits_like or like_term)
     else:
         search_filter = "AND titulo.operador = %s"
         params = [username]
