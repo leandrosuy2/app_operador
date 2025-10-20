@@ -89,15 +89,7 @@
           <div class="col-md-6 mb-3"><label><strong>CPF:</strong></label><p class="form-control-plaintext">{{ devedor.cpf }}</p></div>
           <div class="col-md-6 mb-3"><label><strong>CNPJ:</strong></label><p class="form-control-plaintext">{{ devedor.cnpj }}</p></div>
           <div class="col-md-6 mb-3"><label><strong>Nome da Mãe:</strong></label><p class="form-control-plaintext">{{ devedor.nome_mae }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>RG:</strong></label><p class="form-control-plaintext">{{ devedor.rg }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>Observação:</strong></label><p class="form-control-plaintext">{{ devedor.observacao }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>CEP:</strong></label><p class="form-control-plaintext">{{ devedor.cep }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>Endereço:</strong></label><p class="form-control-plaintext">{{ devedor.endereco }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>Bairro:</strong></label><p class="form-control-plaintext">{{ devedor.bairro }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>Cidade:</strong></label><p class="form-control-plaintext">{{ devedor.cidade }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>UF:</strong></label><p class="form-control-plaintext">{{ devedor.uf }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>E-mail 1:</strong></label><p class="form-control-plaintext">{{ devedor.email1 }}</p></div>
-          <div class="col-md-6 mb-3"><label><strong>E-mail 2:</strong></label><p class="form-control-plaintext">{{ devedor.email2 }}</p></div>
+          <div class="col-md-6 mb-3"><label><strong>Credor:</strong></label><p class="form-control-plaintext">{{ empresa.nome_fantasia|default:empresa.razao_social }}</p></div>
         </div>
 
         <h4 class="mt-4">Telefones</h4>
