@@ -567,8 +567,45 @@ def dashboard(request):
     # =========================================================
     data_fim_5_dias = hoje + timedelta(days=5)
     
-    # Query para buscar títulos próximos do vencimento
-    titulos_proximos_query = """
+    # Query para buscar títulos próximos do vencimento (com filtro de busca)
+    extra_filter_tp = ""
+    extra_params_tp = []
+    if query:
+        like_term = f"%{query}%"
+        digits = re.sub(r"\D", "", query)
+        digits_like = f"%{digits}%" if digits else like_term
+        extra_filter_tp = """
+            AND (
+                d.nome LIKE %s OR
+                d.razao_social LIKE %s OR
+                e.nome_fantasia LIKE %s OR
+                e.razao_social LIKE %s OR
+                d.cpf LIKE %s OR
+                d.cnpj LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.cpf,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.cnpj,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone1,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone2,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone3,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone4,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone5,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone6,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone7,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone8,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone9,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s OR
+                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(d.telefone10,''),'.',''),'-',''),'/',''),' ',''),'(',''),')','') LIKE %s
+            )
+        """
+        extra_params_tp = [
+            like_term, like_term, like_term, like_term,
+            like_term, like_term,
+            digits_like, digits_like,
+        ]
+        for _ in range(11):
+            extra_params_tp.append(digits_like)
+
+    titulos_proximos_query = f"""
         SELECT
             t.id,
             1 as parcela_numero,
@@ -591,11 +628,12 @@ def dashboard(request):
         LEFT JOIN core_empresa e ON d.empresa_id = e.id
         WHERE t.dataVencimento BETWEEN CURDATE() AND %s
             AND (e.status_empresa = 1 OR e.status_empresa IS NULL)
+            {extra_filter_tp}
         ORDER BY t.dataVencimento ASC
     """
-    
+
     with connection.cursor() as cursor:
-        cursor.execute(titulos_proximos_query, [data_fim_5_dias])
+        cursor.execute(titulos_proximos_query, [data_fim_5_dias, *extra_params_tp])
         titulos_proximos_rows = cursor.fetchall()
     
     # Converter para lista de dicionários
