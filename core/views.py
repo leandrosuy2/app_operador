@@ -631,10 +631,44 @@ def dashboard(request):
             {extra_filter_tp}
         ORDER BY t.dataVencimento ASC
     """
-
+    
     with connection.cursor() as cursor:
         cursor.execute(titulos_proximos_query, [data_fim_5_dias, *extra_params_tp])
         titulos_proximos_rows = cursor.fetchall()
+
+    # Fallback: se o usuário pesquisou e não há títulos no intervalo de 5 dias,
+    # mostramos os títulos do cliente independentemente da data (até 5),
+    # para que o cliente apareça mesmo sem parcelas a vencer no período.
+    if query and not titulos_proximos_rows:
+        titulos_fallback_query = f"""
+            SELECT
+                t.id,
+                1 as parcela_numero,
+                t.dataVencimento as data_vencimento,
+                t.valor,
+                CASE 
+                    WHEN t.statusBaixa = 1 THEN 'PAGO'
+                    WHEN t.statusBaixa = 3 THEN 'NEGOCIADO'
+                    ELSE 'PENDENTE'
+                END as status,
+                COALESCE(d.nome, d.razao_social, 'Nome não informado') AS devedor_nome,
+                d.cpf,
+                d.cnpj,
+                COALESCE(e.nome_fantasia, e.razao_social, 'Empresa não informada') AS empresa_nome,
+                COALESCE(t.operador, 'Não atribuído') AS operador,
+                '' as contato,
+                DATEDIFF(t.dataVencimento, CURDATE()) AS dias_para_vencimento
+            FROM titulo t
+            LEFT JOIN devedores d ON t.devedor_id = d.id
+            LEFT JOIN core_empresa e ON d.empresa_id = e.id
+            WHERE (e.status_empresa = 1 OR e.status_empresa IS NULL)
+              {extra_filter_tp}
+            ORDER BY t.dataVencimento ASC
+            LIMIT 5
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(titulos_fallback_query, [*extra_params_tp])
+            titulos_proximos_rows = cursor.fetchall()
     
     # Converter para lista de dicionários
     titulos_proximos_data = []
@@ -2947,6 +2981,7 @@ def quitar_parcela(request, titulo_id):
             valor_recebido = float(request.POST.get("valorRecebido"))
             data_baixa = request.POST.get("dataBaixa")
             forma_pagamento = int(request.POST.get("formaPagamento"))
+            comprovante_file = request.FILES.get("comprovante")
 
             # Atualizar o título
             titulo.valorRecebido = valor_recebido
@@ -2955,6 +2990,9 @@ def quitar_parcela(request, titulo_id):
                 forma_pagamento  # Salvar a forma de pagamento no banco
             )
             titulo.statusBaixa = 2  # Alterar status para Quitado
+            # Salvar comprovante se enviado
+            if comprovante_file:
+                titulo.comprovante = comprovante_file
             titulo.save()
 
             # Buscar e-mail da empresa usando `core_empresa.id` ou `devedor.empresa_id`
@@ -3803,6 +3841,19 @@ def gerar_recibo(request, titulo_id):
     except Exception:
         logo_url = ""
 
+    # Comprovante do título (se houver)
+    comp_url = ""
+    comp_is_image = False
+    try:
+        comp_field = getattr(titulo, "comprovante", None)
+        if comp_field:
+            comp_url = request.build_absolute_uri(comp_field.url)
+            ext = os.path.splitext(getattr(comp_field, "name", ""))[1].lower()
+            comp_is_image = ext in [".png", ".jpg", ".jpeg", ".gif", ".webp"]
+    except Exception:
+        comp_url = ""
+        comp_is_image = False
+
     context = {
         "empresa": empresa,          # objeto inteiro (demais dados)
         "logo_url": logo_url,        # <-- use isto no template
@@ -3821,6 +3872,10 @@ def gerar_recibo(request, titulo_id):
         "consultor": getattr(empresa, "operador", "") or getattr(empresa, "supervisor", "") or "",
         "autenticacao_token": autenticacao_token,
         "data_autenticacao": (titulo.data_baixa if titulo.data_baixa else None),
+
+        # Comprovante para exibir no recibo
+        "comprovante_url": comp_url,
+        "comprovante_is_image": comp_is_image,
     }
     return render(request, "recibo.html", context)
 

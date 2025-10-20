@@ -104,6 +104,7 @@
                 <th style="padding: 5px;">CPF / CNPJ</th>                
                 <th style="padding: 5px;">Empresa</th>
                 <th style="padding: 5px;">Título ID</th>
+                <th style="padding: 5px;">Telefones</th>
                 <th style="padding: 5px;">Status Baixa</th>
                 <th style="padding: 5px;">Ações</th>
             </tr>
@@ -136,6 +137,27 @@
                     
                     <td><b>{{ devedor.empresa }}</b></td>
                     <td><b>{{ devedor.titulo_id }}</b></td>
+                    <td class="text-start">
+                      {% with t1=devedor.telefone1 t2=devedor.telefone2 t3=devedor.telefone3 t4=devedor.telefone4 t5=devedor.telefone5 t6=devedor.telefone6 t7=devedor.telefone7 t8=devedor.telefone8 t9=devedor.telefone9 t10=devedor.telefone10 %}
+                        {% firstof t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 as any %}
+                        {% if any %}
+                          <small>
+                            {% if t1 %}<span class="badge bg-light text-dark border">{{ t1 }}</span>{% endif %}
+                            {% if t2 %}<span class="badge bg-light text-dark border">{{ t2 }}</span>{% endif %}
+                            {% if t3 %}<span class="badge bg-light text-dark border">{{ t3 }}</span>{% endif %}
+                            {% if t4 %}<span class="badge bg-light text-dark border">{{ t4 }}</span>{% endif %}
+                            {% if t5 %}<span class="badge bg-light text-dark border">{{ t5 }}</span>{% endif %}
+                            {% if t6 %}<span class="badge bg-light text-dark border">{{ t6 }}</span>{% endif %}
+                            {% if t7 %}<span class="badge bg-light text-dark border">{{ t7 }}</span>{% endif %}
+                            {% if t8 %}<span class="badge bg-light text-dark border">{{ t8 }}</span>{% endif %}
+                            {% if t9 %}<span class="badge bg-light text-dark border">{{ t9 }}</span>{% endif %}
+                            {% if t10 %}<span class="badge bg-light text-dark border">{{ t10 }}</span>{% endif %}
+                          </small>
+                        {% else %}
+                          <small class="text-muted">—</small>
+                        {% endif %}
+                      {% endwith %}
+                    </td>
                    {# templates/devedores_listar.html #}
 <td><b>
   {% if devedor.status_baixa == "Pendente" %}

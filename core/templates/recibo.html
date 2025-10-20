@@ -16,7 +16,7 @@
   .btn{border:1px solid #000; padding:6px 10px; background:#fff; cursor:pointer; font-size:12px}
   .btn:hover{filter:brightness(0.95)}
 
-  .sheet{height:148mm;}
+  .sheet{min-height:148mm;}
   .wrap{padding: 10mm 12mm 8mm 12mm;}
 
   .header{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:8px}
@@ -111,6 +111,20 @@
         <div class="mb"><span class="label">Consultor:</span> {{ consultor|default:"" }}.</div>
         <div><span class="label">Autenticação:</span> {{ autenticacao_token }}{% if data_autenticacao %} gerada em {{ data_autenticacao|date:"d/m/Y" }}{% endif %}.</div>
       </div>
+
+      {% if comprovante_url %}
+      <div class="box mt">
+        <div class="mb"><span class="label">Comprovante do pagamento</span></div>
+        {% if comprovante_is_image %}
+          <img src="{{ comprovante_url }}" alt="Comprovante" style="max-width:100%; height:auto; border:1px solid #000;" />
+        {% else %}
+          <div>
+            Arquivo anexado ao pagamento.
+            <a href="{{ comprovante_url }}" target="_blank">Abrir comprovante</a>
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
 
     </div>
   </div>
