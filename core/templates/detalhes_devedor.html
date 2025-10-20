@@ -1455,6 +1455,7 @@
         <button type="button" class="btn btn-outline-primary active" data-opt="padrao" onclick="escolherMsg('padrao')">Padrão</button>
         <button type="button" class="btn btn-outline-primary" data-opt="vencidas" onclick="escolherMsg('vencidas')">Vencidas</button>
         <button type="button" class="btn btn-outline-primary" data-opt="a_vencer" onclick="escolherMsg('a_vencer')">A vencer</button>
+        <button type="button" class="btn btn-outline-primary" data-opt="vencendo_hoje" onclick="escolherMsg('vencendo_hoje')">Vencendo hoje</button>
         <button type="button" class="btn btn-outline-primary" data-opt="quebra" onclick="escolherMsg('quebra')">Quebra de acordo</button>
         <button type="button" class="btn btn-outline-success" data-opt="proposta" onclick="escolherMsg('proposta')">Proposta de Acordo</button>
       </div>
@@ -1492,9 +1493,10 @@
     a_vencer:`{{ msg_a_vencer|default_if_none:''|escapejs }}`,
     padrao:  `{{ msg_padrao|default_if_none:''|escapejs }}`,
     quebra:  `{{ msg_quebra|default_if_none:''|escapejs }}`,
+    vencendo_hoje: '' ,
     proposta: ''
   };
-  const LABEL_TEMPLATE = { padrao:'Padrão', vencidas:'Vencidas', a_vencer:'A vencer', quebra:'Quebra de acordo', proposta:'Proposta de Acordo' };
+  const LABEL_TEMPLATE = { padrao:'Padrão', vencidas:'Vencidas', a_vencer:'A vencer', vencendo_hoje:'Vencendo hoje', quebra:'Quebra de acordo', proposta:'Proposta de Acordo' };
   let ESCOLHA_ATUAL = 'padrao';
 
   /* ================== UI DO MODAL ================== */
@@ -1503,6 +1505,7 @@
     if (el) el.textContent = MSGS_WHATS[ESCOLHA_ATUAL] || '';
   }
   function escolherMsg(tipo){
+    if (tipo === 'vencendo_hoje') atualizarMsgVencendoHoje();
     ESCOLHA_ATUAL = tipo;
     document.querySelectorAll('[data-opt]').forEach(b=>b.classList.remove('active'));
     const bt = document.querySelector(`[data-opt="${tipo}"]`);
@@ -1518,6 +1521,47 @@
     }
     escolherMsg('padrao');
     new bootstrap.Modal(document.getElementById('modalWhatsapp')).show();
+  }
+  // ===== Mensagem "Vencendo hoje"
+  function obterCtxEmpresa(){
+    const el = document.getElementById('ctx');
+    const fantasia = el?.dataset?.empresaFantasia || '';
+    const razao    = el?.dataset?.empresaRazao || '';
+    return fantasia || razao || '';
+  }
+  function hojeBR(){
+    const d=new Date();
+    return String(d.getDate()).padStart(2,'0')+"/"+String(d.getMonth()+1).padStart(2,'0')+"/"+d.getFullYear();
+  }
+  function parseMoneyBR(txt){ return (txt||'').trim(); }
+  function somaVencendoHoje(){
+    const alvo = hojeBR();
+    let total = 0;
+    const toNumber = s=>{ s=(s||'').replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',', '.'); const n=parseFloat(s); return isNaN(n)?0:n; };
+    // Tabela Entrada
+    const te = document.getElementById('tblTitulosEntrada');
+    if (te) te.querySelectorAll('tbody tr').forEach(tr=>{
+      const tds = tr.querySelectorAll('td');
+      const venc = (tds[7]?.textContent||'').trim();
+      const valor = (tds[10]?.textContent||tds[3]?.textContent||'').trim();
+      if (venc === alvo) total += toNumber(valor);
+    });
+    // Tabela Associados
+    const ta = document.getElementById('tblTitulosAssociados');
+    if (ta) ta.querySelectorAll('tbody tr').forEach(tr=>{
+      const tds = tr.querySelectorAll('td');
+      const venc = (tds[6]?.textContent||'').trim();
+      const valor = (tds[4]?.textContent||'').trim();
+      if (venc === alvo) total += toNumber(valor);
+    });
+    return total;
+  }
+  function formatBRL(n){ try{ return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n||0);}catch(_){ return `R$ ${Number(n||0).toFixed(2)}`.replace('.',','); } }
+  function atualizarMsgVencendoHoje(){
+    const credor = obterCtxEmpresa();
+    const totalHoje = somaVencendoHoje();
+    const valorTxt = formatBRL(totalHoje);
+    MSGS_WHATS.vencendo_hoje = `Bom dia\n\nComunicamos que consta valores a serem pagos hoje para o credor ${credor}.\n\nValor da parcela: ${valorTxt}`;
   }
 
   /* ================== HELPERS ================== */
