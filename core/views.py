@@ -292,7 +292,7 @@ def dashboard(request):
             FROM titulo
             WHERE statusBaixa = 3
               AND operador = %s
-              AND created_at LIKE CONCAT(CURDATE(), '%');
+              AND DATE(created_at) = CURDATE();
             """,
             [username]
         )
