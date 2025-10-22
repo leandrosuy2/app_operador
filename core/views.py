@@ -260,15 +260,30 @@ def dashboard(request):
     } for r in sug_rows]
 
     # =========================================================
-    # Cards (contagens rápidas)
+    # Cards (contagens rápidas) - FILTRADO POR OPERADOR
     # =========================================================
-    titulos_pendentes = Titulo.objects.filter(Q(statusBaixa=0) | Q(statusBaixa__isnull=True)).count()
-    titulos_quitados = Titulo.objects.filter(statusBaixa=2).count()
-    titulos_negociados = Titulo.objects.filter(statusBaixa=3).count()
-    total_clientes = Devedor.objects.count()
+    titulos_pendentes = Titulo.objects.filter(
+        Q(statusBaixa=0) | Q(statusBaixa__isnull=True),
+        operador=username
+    ).count()
+    
+    titulos_quitados = Titulo.objects.filter(
+        statusBaixa=2,
+        operador=username
+    ).count()
+    
+    titulos_negociados = Titulo.objects.filter(
+        statusBaixa=3,
+        operador=username
+    ).count()
+    
+    # Total de clientes do operador (devedores com títulos atribuídos ao operador)
+    total_clientes = Devedor.objects.filter(
+        titulo__operador=username
+    ).distinct().count()
 
     # =========================================================
-    # Totais do dia (Negociados / Quitados)
+    # Totais do dia (Negociados / Quitados) - FILTRADO POR OPERADOR
     # =========================================================
     with connection.cursor() as cursor:
         cursor.execute(
@@ -276,8 +291,10 @@ def dashboard(request):
             SELECT SUM(valor) AS total_negociados_hoje
             FROM titulo
             WHERE statusBaixa = 3
+              AND operador = %s
               AND created_at LIKE CONCAT(CURDATE(), '%');
-            """
+            """,
+            [username]
         )
         row = cursor.fetchone()
     negociados_hoje = round(Decimal(row[0] or 0), 2)
@@ -287,14 +304,16 @@ def dashboard(request):
             """
             SELECT SUM(COALESCE(valorRecebido, 0)) AS total_quitados_hoje
             FROM titulo
-            WHERE data_baixa = CURDATE();
-            """
+            WHERE data_baixa = CURDATE()
+              AND operador = %s;
+            """,
+            [username]
         )
         row = cursor.fetchone()
     quitados_hoje = round(Decimal(row[0] or 0), 2)
 
     # =========================================================
-    # Detalhes "Quitados Hoje"
+    # Detalhes "Quitados Hoje" - FILTRADO POR OPERADOR
     # =========================================================
     quitados_hoje_detalhes = Titulo.objects.raw(
         """
@@ -308,8 +327,9 @@ def dashboard(request):
         INNER JOIN devedores d    ON t.devedor_id = d.id
         INNER JOIN core_empresa e ON d.empresa_id = e.id
         WHERE t.data_baixa = %s
+          AND t.operador = %s
         """,
-        [hoje],
+        [hoje, username],
     )
     quitados_hoje_detalhes_data = [
         {
@@ -323,7 +343,7 @@ def dashboard(request):
     ]
 
     # =========================================================
-    # Detalhes "Negociados Hoje"
+    # Detalhes "Negociados Hoje" - FILTRADO POR OPERADOR
     # =========================================================
     negociados_hoje_detalhes = Titulo.objects.raw(
         """
@@ -338,8 +358,9 @@ def dashboard(request):
         INNER JOIN core_empresa e ON d.empresa_id = e.id
         WHERE t.statusBaixa = 3
           AND DATE(t.created_at) = %s
+          AND t.operador = %s
         """,
-        [hoje],
+        [hoje, username],
     )
     negociados_hoje_detalhes_data = [
         {
@@ -353,9 +374,13 @@ def dashboard(request):
     ]
 
     # =========================================================
-    # Contador "Negociados em Atraso"
+    # Contador "Negociados em Atraso" - FILTRADO POR OPERADOR
     # =========================================================
-    negociados_em_atraso_count = Titulo.objects.filter(statusBaixa=3, dataVencimento__lt=hoje).count()
+    negociados_em_atraso_count = Titulo.objects.filter(
+        statusBaixa=3, 
+        dataVencimento__lt=hoje,
+        operador=username
+    ).count()
 
     # =========================================================
     # Parcelamentos atrasados / vencendo hoje
@@ -628,12 +653,13 @@ def dashboard(request):
         LEFT JOIN core_empresa e ON d.empresa_id = e.id
         WHERE t.dataVencimento BETWEEN CURDATE() AND %s
             AND (e.status_empresa = 1 OR e.status_empresa IS NULL)
+            AND t.operador = %s
             {extra_filter_tp}
         ORDER BY t.dataVencimento ASC
     """
     
     with connection.cursor() as cursor:
-        cursor.execute(titulos_proximos_query, [data_fim_5_dias, *extra_params_tp])
+        cursor.execute(titulos_proximos_query, [data_fim_5_dias, username, *extra_params_tp])
         titulos_proximos_rows = cursor.fetchall()
 
     # Fallback: se o usuário pesquisou e não há títulos no intervalo de 5 dias,
@@ -662,12 +688,13 @@ def dashboard(request):
             LEFT JOIN devedores d ON t.devedor_id = d.id
             LEFT JOIN core_empresa e ON d.empresa_id = e.id
             WHERE (e.status_empresa = 1 OR e.status_empresa IS NULL)
+              AND t.operador = %s
               {extra_filter_tp}
             ORDER BY t.dataVencimento ASC
             LIMIT 5
         """
         with connection.cursor() as cursor:
-            cursor.execute(titulos_fallback_query, [*extra_params_tp])
+            cursor.execute(titulos_fallback_query, [username, *extra_params_tp])
             titulos_proximos_rows = cursor.fetchall()
     
     # Converter para lista de dicionários

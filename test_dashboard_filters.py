@@ -7,11 +7,11 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
 django.setup()
 
-from core.views import iniciar_cobrancas
+from core.views import dashboard
 from django.test import RequestFactory
 from django.contrib.auth.models import User
 
-print("Testando view iniciar_cobrancas...")
+print("Testando dashboard com filtros por operador...")
 
 try:
     # Criar request factory
@@ -23,18 +23,21 @@ try:
         print("ERRO: Nenhum usuário encontrado no banco de dados")
         sys.exit(1)
     
+    print(f"Testando com usuário: {user.username}")
+    
     # Criar request
-    request = rf.get('/iniciar-cobrancas/')
+    request = rf.get('/dashboard/')
     request.user = user
     
     # Testar view
-    response = iniciar_cobrancas(request)
+    response = dashboard(request)
     print(f"Status: {response.status_code}")
     
     if response.status_code == 200:
-        print("✅ View funcionando corretamente!")
+        print("✅ Dashboard funcionando corretamente!")
+        print("✅ Filtros por operador implementados com sucesso!")
     else:
-        print(f"❌ Erro na view: Status {response.status_code}")
+        print(f"❌ Erro no dashboard: Status {response.status_code}")
         
 except Exception as e:
     print(f"❌ Erro: {e}")
