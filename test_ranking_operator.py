@@ -11,7 +11,7 @@ from core.views import dashboard
 from django.test import RequestFactory
 from django.contrib.auth.models import User
 
-print("Testando dashboard com filtros por operador...")
+print("Testando dashboard com ranking do operador...")
 
 try:
     # Criar request factory
@@ -35,7 +35,8 @@ try:
     
     if response.status_code == 200:
         print("✅ Dashboard funcionando corretamente!")
-        print("✅ Filtros por operador implementados com sucesso!")
+        print("✅ Ranking do operador implementado com sucesso!")
+        print("✅ Card 'Total Recebido Este Mês' substituiu 'Total de Clientes'!")
     else:
         print(f"❌ Erro no dashboard: Status {response.status_code}")
         

@@ -277,10 +277,25 @@ def dashboard(request):
         operador=username
     ).count()
     
-    # Total de clientes do operador (devedores com títulos atribuídos ao operador)
-    total_clientes = Devedor.objects.filter(
-        titulo__operador=username
-    ).distinct().count()
+    # Total recebido pelo operador no mês vigente
+    from datetime import datetime
+    hoje = timezone.now().date()
+    primeiro_dia_mes = hoje.replace(day=1)
+    
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT SUM(COALESCE(valorRecebido, 0)) AS total_recebido_mes
+            FROM titulo
+            WHERE operador = %s
+              AND data_baixa >= %s
+              AND data_baixa <= %s
+              AND statusBaixa = 2;
+            """,
+            [username, primeiro_dia_mes, hoje]
+        )
+        row = cursor.fetchone()
+    total_recebido_mes = round(Decimal(row[0] or 0), 2)
 
     # =========================================================
     # Totais do dia (Negociados / Quitados) - FILTRADO POR OPERADOR
@@ -729,7 +744,7 @@ def dashboard(request):
         "titulos_pendentes": titulos_pendentes,
         "titulos_quitados": titulos_quitados,
         "titulos_negociados": titulos_negociados,
-        "total_clientes": total_clientes,
+        "total_recebido_mes": total_recebido_mes,
 
         "negociados_em_atraso_count": negociados_em_atraso_count,
         "parcelamentos_atrasados": parcelamentos_atrasados,
