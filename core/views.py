@@ -3023,6 +3023,7 @@ def quitar_parcela(request, titulo_id):
             valor_recebido = float(request.POST.get("valorRecebido"))
             data_baixa = request.POST.get("dataBaixa")
             forma_pagamento = int(request.POST.get("formaPagamento"))
+            operador_selecionado = request.POST.get("operador")
             comprovante_file = request.FILES.get("comprovante")
 
             # Atualizar o título
@@ -3031,6 +3032,7 @@ def quitar_parcela(request, titulo_id):
             titulo.forma_pag_Id = (
                 forma_pagamento  # Salvar a forma de pagamento no banco
             )
+            titulo.operador = operador_selecionado  # Salvar o operador selecionado
             titulo.statusBaixa = 2  # Alterar status para Quitado
             # Salvar comprovante se enviado
             if comprovante_file:
@@ -4400,6 +4402,10 @@ def detalhes_devedor(request, titulo_id):
             messages.error(request, f"Erro ao salvar os telefones: {e}")
         return redirect("detalhes_devedor", titulo_id=titulo.id)
 
+    # Lista de operadores para o modal de quitar parcela
+    from django.contrib.auth.models import User
+    operadores = User.objects.filter(is_active=True).order_by('first_name', 'username')
+
     context = {
         "titulo": titulo,
         "devedor": devedor,
@@ -4409,6 +4415,7 @@ def detalhes_devedor(request, titulo_id):
         "titulos_associados": list(titulos_associados),
         "agendamentos": Agendamento.objects.filter(devedor=devedor),
         "follow_ups": follow_ups,
+        "operadores": operadores,
 
         # mensagens Whats
         "msg_vencidas": msg_vencidas,

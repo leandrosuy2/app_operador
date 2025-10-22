@@ -1252,6 +1252,18 @@
         </div>
 
         <div class="mb-3">
+          <label for="operador{{ titulo.id }}" class="form-label">Operador:</label>
+          <select class="form-select" id="operador{{ titulo.id }}" name="operador" required>
+            <option value="{{ request.user.username }}">{{ request.user.get_full_name|default:request.user.first_name|default:request.user.username }}</option>
+            {% for user in operadores %}
+              {% if user.username != request.user.username %}
+                <option value="{{ user.username }}">{{ user.get_full_name|default:user.first_name|default:user.username }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
           <label for="formaPagamento{{ titulo.id }}" class="form-label">Forma de Pagamento:</label>
           <select class="form-select" id="formaPagamento{{ titulo.id }}" name="formaPagamento" required>
             <option value="0">Pix</option>
@@ -1264,6 +1276,7 @@
             <option value="7">Boleto Bancário</option>
             <option value="8">Duplicata</option>
             <option value="9">Recebimento pelo credor</option>
+            <option value="10">Óbito confirmado</option>
           </select>
         </div>
 
