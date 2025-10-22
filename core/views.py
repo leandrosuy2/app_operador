@@ -5528,7 +5528,7 @@ def iniciar_cobrancas(request):
                 END as prioridade
             FROM core_parcelamento p
             INNER JOIN core_acordo a ON p.acordo_id = a.id
-            INNER JOIN core_devedor d ON a.devedor_id = d.id
+            INNER JOIN devedores d ON a.devedor_id = d.id
             INNER JOIN core_empresa e ON a.empresa_id = e.id
             WHERE p.status = 'PENDENTE'
                 AND e.status_empresa = 1
