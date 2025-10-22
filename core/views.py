@@ -5484,3 +5484,129 @@ def format_date(value):
     return value
 
 
+@login_required
+def iniciar_cobrancas(request):
+    """
+    View para iniciar cobranças com lista específica de parcelas organizadas por prioridade:
+    1. Parcelas vencidas nos últimos 30 dias
+    2. Parcelas vencendo hoje
+    3. Parcelas a vencer nos próximos 5 dias
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.core.paginator import Paginator
+    
+    hoje = timezone.now().date()
+    data_30_dias_atras = hoje - timedelta(days=30)
+    data_5_dias_frente = hoje + timedelta(days=5)
+    
+    # Query para buscar parcelas com prioridade específica
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT 
+                p.id as parcela_id,
+                p.parcela_numero,
+                p.data_vencimento,
+                p.valor,
+                p.status,
+                p.forma_pagamento,
+                d.nome as devedor_nome,
+                d.cpf,
+                d.cnpj,
+                d.telefone,
+                d.telefone1,
+                d.telefone2,
+                d.telefone3,
+                e.nome_fantasia as empresa_nome,
+                e.razao_social as empresa_razao,
+                a.id as acordo_id,
+                CASE 
+                    WHEN p.data_vencimento < %s THEN 1  -- Vencidas nos últimos 30 dias
+                    WHEN p.data_vencimento = %s THEN 2  -- Vencendo hoje
+                    WHEN p.data_vencimento BETWEEN %s AND %s THEN 3  -- Próximos 5 dias
+                    ELSE 4
+                END as prioridade,
+                CASE 
+                    WHEN p.data_vencimento < %s THEN DATEDIFF(%s, p.data_vencimento)
+                    WHEN p.data_vencimento = %s THEN 0
+                    WHEN p.data_vencimento > %s THEN DATEDIFF(p.data_vencimento, %s)
+                    ELSE 0
+                END as dias_diferenca
+            FROM core_parcelamento p
+            INNER JOIN core_acordo a ON p.acordo_id = a.id
+            INNER JOIN core_devedor d ON a.devedor_id = d.id
+            INNER JOIN core_empresa e ON a.empresa_id = e.id
+            WHERE p.status = 'PENDENTE'
+                AND e.status_empresa = 1
+                AND (
+                    (p.data_vencimento < %s AND p.data_vencimento >= %s) OR  -- Vencidas últimos 30 dias
+                    p.data_vencimento = %s OR  -- Vencendo hoje
+                    (p.data_vencimento > %s AND p.data_vencimento <= %s)  -- Próximos 5 dias
+                )
+            ORDER BY 
+                CASE 
+                    WHEN p.data_vencimento < %s THEN 1  -- Prioridade 1: Vencidas
+                    WHEN p.data_vencimento = %s THEN 2  -- Prioridade 2: Hoje
+                    WHEN p.data_vencimento BETWEEN %s AND %s THEN 3  -- Prioridade 3: Próximos 5 dias
+                    ELSE 4
+                END,
+                p.data_vencimento ASC,
+                p.valor DESC
+        """, [
+            hoje, hoje, hoje, data_5_dias_frente,  # Para cálculo de prioridade
+            hoje, hoje, hoje, hoje, hoje,  # Para cálculo de dias_diferenca
+            hoje, data_30_dias_atras, hoje, hoje, data_5_dias_frente,  # Para WHERE
+            hoje, hoje, hoje, data_5_dias_frente  # Para ORDER BY
+        ])
+        
+        parcelas = cursor.fetchall()
+    
+    # Organizar dados em formato mais legível
+    parcelas_organizadas = []
+    for parcela in parcelas:
+        parcela_dict = {
+            'id': parcela[0],
+            'parcela_numero': parcela[1],
+            'data_vencimento': parcela[2],
+            'valor': parcela[3],
+            'status': parcela[4],
+            'forma_pagamento': parcela[5],
+            'devedor_nome': parcela[6],
+            'cpf': parcela[7],
+            'cnpj': parcela[8],
+            'telefone': parcela[9],
+            'telefone1': parcela[10],
+            'telefone2': parcela[11],
+            'telefone3': parcela[12],
+            'empresa_nome': parcela[13],
+            'empresa_razao': parcela[14],
+            'acordo_id': parcela[15],
+            'prioridade': parcela[16],
+            'dias_diferenca': parcela[17]
+        }
+        parcelas_organizadas.append(parcela_dict)
+    
+    # Separar por prioridade para exibição
+    parcelas_vencidas = [p for p in parcelas_organizadas if p['prioridade'] == 1]
+    parcelas_hoje = [p for p in parcelas_organizadas if p['prioridade'] == 2]
+    parcelas_proximas = [p for p in parcelas_organizadas if p['prioridade'] == 3]
+    
+    # Paginação
+    paginator = Paginator(parcelas_organizadas, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'parcelas_vencidas': parcelas_vencidas,
+        'parcelas_hoje': parcelas_hoje,
+        'parcelas_proximas': parcelas_proximas,
+        'total_parcelas': len(parcelas_organizadas),
+        'page_obj': page_obj,
+        'hoje': hoje,
+        'data_30_dias_atras': data_30_dias_atras,
+        'data_5_dias_frente': data_5_dias_frente,
+    }
+    
+    return render(request, 'iniciar_cobrancas.html', context)
+
+

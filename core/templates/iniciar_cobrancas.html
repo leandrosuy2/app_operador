@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  .priority-badge {
+    font-size: 0.8rem;
+    font-weight: bold;
+  }
+  .priority-1 { background-color: #dc3545 !important; color: white; }
+  .priority-2 { background-color: #fd7e14 !important; color: white; }
+  .priority-3 { background-color: #ffc107 !important; color: black; }
+  
+  .card-priority {
+    border-left: 5px solid;
+  }
+  .card-priority.priority-1 { border-left-color: #dc3545; }
+  .card-priority.priority-2 { border-left-color: #fd7e14; }
+  .card-priority.priority-3 { border-left-color: #ffc107; }
+  
+  .table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+  }
+</style>
+
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="text-center mb-4">
+        <i class="fas fa-play-circle text-primary me-2"></i>
+        INICIAR COBRANÇAS
+      </h1>
+      
+      <!-- Resumo por Prioridade -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card card-priority priority-1">
+            <div class="card-body text-center">
+              <h5 class="card-title">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Vencidas (30 dias)
+              </h5>
+              <h3 class="text-danger">{{ parcelas_vencidas|length }}</h3>
+              <small class="text-muted">Parcelas em atraso</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card card-priority priority-2">
+            <div class="card-body text-center">
+              <h5 class="card-title">
+                <i class="fas fa-calendar-day me-2"></i>
+                Vencendo Hoje
+              </h5>
+              <h3 class="text-warning">{{ parcelas_hoje|length }}</h3>
+              <small class="text-muted">Parcelas para hoje</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card card-priority priority-3">
+            <div class="card-body text-center">
+              <h5 class="card-title">
+                <i class="fas fa-clock me-2"></i>
+                Próximos 5 dias
+              </h5>
+              <h3 class="text-info">{{ parcelas_proximas|length }}</h3>
+              <small class="text-muted">Parcelas a vencer</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Total -->
+      <div class="alert alert-info text-center">
+        <h4><i class="fas fa-list me-2"></i>Total de Parcelas para Cobrança: {{ total_parcelas }}</h4>
+        <small>Período: {{ data_30_dias_atras|date:"d/m/Y" }} até {{ data_5_dias_frente|date:"d/m/Y" }}</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Parcelas -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            Lista de Parcelas por Prioridade
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+              <thead class="table-dark sticky-top">
+                <tr>
+                  <th>Prioridade</th>
+                  <th>Devedor</th>
+                  <th>CPF/CNPJ</th>
+                  <th>Empresa</th>
+                  <th>Parcela</th>
+                  <th>Vencimento</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                  <th>Dias</th>
+                  <th>Telefones</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for parcela in page_obj %}
+                <tr>
+                  <td>
+                    {% if parcela.prioridade == 1 %}
+                      <span class="badge priority-badge priority-1">URGENTE</span>
+                    {% elif parcela.prioridade == 2 %}
+                      <span class="badge priority-badge priority-2">HOJE</span>
+                    {% elif parcela.prioridade == 3 %}
+                      <span class="badge priority-badge priority-3">PRÓXIMO</span>
+                    {% endif %}
+                  </td>
+                  <td><strong>{{ parcela.devedor_nome|default:"Não informado" }}</strong></td>
+                  <td>
+                    {% if parcela.cpf %}
+                      {{ parcela.cpf }}
+                    {% elif parcela.cnpj %}
+                      {{ parcela.cnpj }}
+                    {% else %}
+                      <span class="text-muted">Não informado</span>
+                    {% endif %}
+                  </td>
+                  <td><strong>{{ parcela.empresa_nome|default:"Não informado" }}</strong></td>
+                  <td><span class="badge bg-secondary">{{ parcela.parcela_numero }}</span></td>
+                  <td><strong>{{ parcela.data_vencimento|date:"d/m/Y" }}</strong></td>
+                  <td><strong class="text-success">R$ {{ parcela.valor|floatformat:2 }}</strong></td>
+                  <td>
+                    {% if parcela.status == 'PENDENTE' %}
+                      <span class="badge bg-warning">Pendente</span>
+                    {% elif parcela.status == 'PAGO' %}
+                      <span class="badge bg-success">Pago</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{{ parcela.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if parcela.prioridade == 1 %}
+                      <span class="text-danger">-{{ parcela.dias_diferenca }} dias</span>
+                    {% elif parcela.prioridade == 2 %}
+                      <span class="text-warning">Hoje</span>
+                    {% elif parcela.prioridade == 3 %}
+                      <span class="text-info">+{{ parcela.dias_diferenca }} dias</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="btn-group-vertical btn-group-sm">
+                      {% if parcela.telefone %}
+                        <button class="btn btn-outline-primary btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modalWhatsappDash"
+                                data-numero="{{ parcela.telefone }}"
+                                data-nome="{{ parcela.devedor_nome }}"
+                                data-doc="{{ parcela.cpf|default:parcela.cnpj }}"
+                                data-empresa="{{ parcela.empresa_nome }}">
+                          <i class="fab fa-whatsapp"></i> {{ parcela.telefone }}
+                        </button>
+                      {% endif %}
+                      {% if parcela.telefone1 %}
+                        <button class="btn btn-outline-primary btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modalWhatsappDash"
+                                data-numero="{{ parcela.telefone1 }}"
+                                data-nome="{{ parcela.devedor_nome }}"
+                                data-doc="{{ parcela.cpf|default:parcela.cnpj }}"
+                                data-empresa="{{ parcela.empresa_nome }}">
+                          <i class="fab fa-whatsapp"></i> {{ parcela.telefone1 }}
+                        </button>
+                      {% endif %}
+                      {% if parcela.telefone2 %}
+                        <button class="btn btn-outline-primary btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modalWhatsappDash"
+                                data-numero="{{ parcela.telefone2 }}"
+                                data-nome="{{ parcela.devedor_nome }}"
+                                data-doc="{{ parcela.cpf|default:parcela.cnpj }}"
+                                data-empresa="{{ parcela.empresa_nome }}">
+                          <i class="fab fa-whatsapp"></i> {{ parcela.telefone2 }}
+                        </button>
+                      {% endif %}
+                      {% if parcela.telefone3 %}
+                        <button class="btn btn-outline-primary btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modalWhatsappDash"
+                                data-numero="{{ parcela.telefone3 }}"
+                                data-nome="{{ parcela.devedor_nome }}"
+                                data-doc="{{ parcela.cpf|default:parcela.cnpj }}"
+                                data-empresa="{{ parcela.empresa_nome }}">
+                          <i class="fab fa-whatsapp"></i> {{ parcela.telefone3 }}
+                        </button>
+                      {% endif %}
+                      {% if not parcela.telefone and not parcela.telefone1 and not parcela.telefone2 and not parcela.telefone3 %}
+                        <span class="text-muted">Sem telefone</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      <a href="{% url 'detalhes_devedor' parcela.acordo_id %}" 
+                         target="_blank" 
+                         class="btn btn-info btn-sm">
+                        <i class="fas fa-eye"></i> Ver
+                      </a>
+                      <button class="btn btn-success btn-sm finalizar-parcela-btn" 
+                              data-id="{{ parcela.id }}">
+                        <i class="fas fa-check"></i> Finalizar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="11" class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Nenhuma parcela encontrada para cobrança no período especificado.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paginação -->
+  {% if page_obj.has_other_pages %}
+  <nav aria-label="Paginação parcelas" class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page=1">&laquo;</a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&lsaquo;</a>
+        </li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+          <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}">&rsaquo;</a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+
+<!-- Modal WhatsApp (reutilizando o do dashboard) -->
+<div class="modal fade" id="modalWhatsappDash" tabindex="-1" aria-labelledby="modalWhatsappDashLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="modalWhatsappDashLabel">Selecionar mensagem do WhatsApp</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+    </div>
+    <div class="modal-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label">Enviar para (número)</label>
+          <select id="whatsNumeroDash" class="form-select"></select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Devedor</label>
+          <input id="whatsNomeDash" type="text" class="form-control" readonly>
+        </div>
+      </div>
+
+      <div class="btn-group flex-wrap w-100 my-3" role="group" aria-label="Escolha a mensagem">
+        <button type="button" class="btn btn-outline-primary active" data-opt="padrao">Padrão</button>
+        <button type="button" class="btn btn-outline-primary" data-opt="vencidas">Vencidas</button>
+        <button type="button" class="btn btn-outline-primary" data-opt="a_vencer">A vencer</button>
+        <button type="button" class="btn btn-outline-primary" data-opt="quebra">Quebra de acordo</button>
+      </div>
+
+      <!-- Acordeão FECHADO por padrão -->
+      <div class="accordion" id="accMsgDash">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headMsgDash">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#collapseMsgDash"
+                    aria-expanded="false" aria-controls="collapseMsgDash">
+              Ver mensagem selecionada
+            </button>
+          </h2>
+          <div id="collapseMsgDash" class="accordion-collapse collapse" aria-labelledby="headMsgDash">
+            <div class="accordion-body">
+              <pre id="previewMsgDash" class="mb-0" style="white-space:pre-wrap;"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <small class="text-muted d-block mt-2">Nada é enviado automaticamente.</small>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+      <button type="button" class="btn btn-success" id="btnEnviarWhatsDash"><i class="bi bi-whatsapp"></i> Abrir WhatsApp</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- JavaScript para o Modal WhatsApp -->
+<script>
+(() => {
+  const modalEl   = document.getElementById('modalWhatsappDash');
+  const selNumero = modalEl.querySelector('#whatsNumeroDash');
+  const inputNome = modalEl.querySelector('#whatsNomeDash');
+  const preview   = modalEl.querySelector('#previewMsgDash');
+  const btnEnviar = modalEl.querySelector('#btnEnviarWhatsDash');
+
+  let ESCOLHA_ATUAL = 'padrao';
+  let CTX_ATUAL = { numero:'', nome:'', doc:'', empresa:'', consultor:'' };
+
+  const maskDoc = (doc) => {
+    const d = (doc||'').replace(/\D/g,'');
+    if (d.length===11) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+    if (d.length===14) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
+    return 'N/A';
+  };
+
+  const TPL = {
+    vencidas:
+`Olá %Nome%
+CPF: %CpfCnpjMascarado%
+
+Me chamo %NomeConsultor% e tenho uma mensagem importante para você.
+
+Lamentamos que não tenha pago a (s) parcela (s) referente ao acordo firmado junto a empresa %NomeCredor%.
+
+Parcelas a serem acionadas por meios jurídicos em 5 (cinco) dias úteis.
+
+Parcelas em aberto: %QtdeParcelas%
+Vencimentos: %ListaVencimentosParcelas%
+
+Valor total em aberto: R$ %ValorTotalParcelas%
+
+Solicitamos sua imediata atenção, hoje seu acordo esta sendo encaminhado para negativação junto aso órgãos de proteção ao credito SPC/SERASA/BOA VISTA e em seguida para analise e acionamento juridico junto a comarca de sua cidade
+
+PROTOCOLO JUIDICO 160120
+
+Converse com Negociar Cobranças no WhatsApp: wa.me/5591991600118
+®NEGOCIAR COBRANÇA
+CNPJ: 12.855.602/0001-74`,
+    a_vencer:
+`Olá %Nome%
+
+ME chamo %NomeConsultor%, gostaria de lembrar sobre a (as ) parcela (s) a vencer referente ao acordo firmado junto a empresa %NomeCredor%.
+solicito que ao efetuar o pagamento da mesma, que encaminhe o comprovante nesse meu contato ou no contato direto do nosso financeiro 91991600118
+Fico no aguardo do envio do comprovante
+
+NOSSO CANAL DE ATENDIMENTO
+(91) 99160-0118
+®NEGOCIAR COBRANÇA
+Att:.
+%NomeConsultor%`,
+    padrao:
+`NOTIFICAÇÃO EXTRAJUDICIAL
+
+Olá, me Chamo %NomeConsultor%.
+
+Nesse contato eu falo com %Nome%, portado do documento %CpfCnpjMascarado% ?
+
+Digite - 01 - Para SIM
+Digite - 02 - Para NÃO
+
+Temos uma informação importante referente a empresa %NomeCredor%
+
+Caso eu demora a responder, me chama no contato abaixo:
+
+Central de Atendimento e Negociações: wa.me://5591991600118`,
+    quebra:
+`Olá, tudo bem contigo ?
+
+Notificamos %Nome%, portador do documento %CpfCnpjMascarado%, que por motivo de não identificarmos os pagamentos das parcelas do acordo feito junto a empresa %NomeCredor%, o mesmo esta sendo cancelado e encaminhado para inclusão em protesto cartorial.
+
+Em segunda estancia, será levado ao acionamento juridico no Forum da comarca de sua residencia.
+
+A divida hoje encontra-se no valor de *R$ %ValorTotalParcelas%*H
+
+Fico no aguardo do seu contato nas proxima 24 horas para evitar o procedimento acima informado.
+
+NOSSO CANAL DE ATENDIMENTO
+(91) 99160-0118
+®NEGOCIAR COBRANÇA
+
+
+atenciosamente
+%NomeConsultor%`,
+  };
+
+  const apply = (tpl, map) => { for (const [k,v] of Object.entries(map)) tpl = tpl.split(k).join(v); return tpl; };
+
+  const montarMensagem = (tipo) => {
+    const base = {
+      "%Nome%": (CTX_ATUAL.nome || "-"),
+      "%CpfCnpjMascarado%": maskDoc(CTX_ATUAL.doc),
+      "%NomeConsultor%": (CTX_ATUAL.consultor || ""),
+      "%NomeCredor%": (CTX_ATUAL.empresa || "NomeCredor"),
+    };
+    const extras = { "%QtdeParcelas%":"-", "%ListaVencimentosParcelas%":"-", "%ValorTotalParcelas%":"-" };
+    return apply(TPL[tipo], { ...base, ...extras });
+  };
+
+  const atualizarPreview = () => { preview.textContent = montarMensagem(ESCOLHA_ATUAL); };
+
+  // Preenche quando o modal vai abrir (button -> relatedTarget)
+  modalEl.addEventListener('show.bs.modal', (ev) => {
+    const btn = ev.relatedTarget;
+    const numero  = btn?.getAttribute('data-numero')  || '';
+    const nome    = btn?.getAttribute('data-nome')    || '';
+    const doc     = btn?.getAttribute('data-doc')     || '';
+    const empresa = btn?.getAttribute('data-empresa') || '';
+    const consultor = `{{ request.user.get_full_name|default:request.user.first_name|default:request.user.username|escapejs }}`;
+
+    CTX_ATUAL = { numero, nome, doc, empresa, consultor };
+
+    selNumero.innerHTML = '';
+    const opt = document.createElement('option'); opt.value = numero; opt.textContent = numero; selNumero.appendChild(opt);
+    selNumero.value = numero;
+    inputNome.value = nome;
+
+    ESCOLHA_ATUAL = 'padrao';
+    modalEl.querySelectorAll('[data-opt]').forEach(b => b.classList.remove('active'));
+    modalEl.querySelector('[data-opt="padrao"]').classList.add('active');
+
+    atualizarPreview();
+  });
+
+  // Troca de template
+  modalEl.querySelectorAll('[data-opt]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modalEl.querySelectorAll('[data-opt]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      ESCOLHA_ATUAL = btn.getAttribute('data-opt');
+      atualizarPreview();
+    });
+  });
+
+  // Abrir WhatsApp
+  btnEnviar.addEventListener('click', () => {
+    const numero = selNumero.value || CTX_ATUAL.numero;
+    if (!numero) return alert('Número inválido.');
+    const texto  = preview.textContent || '';
+    const url    = `https://wa.me/${encodeURIComponent(numero)}?text=${encodeURIComponent(texto)}`;
+    window.open(url, '_blank');
+  });
+})();
+</script>
+
+<!-- JavaScript para finalizar parcela -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".finalizar-parcela-btn").forEach((button) => {
+    button.addEventListener("click", async function () {
+      const id = this.getAttribute("data-id");
+      if (!id) return;
+
+      if (!confirm("Finalizar esta parcela? Ela será marcada como paga.")) return;
+
+      const row = this.closest("tr");
+      const originalHTML = this.innerHTML;
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Finalizando';
+
+      try {
+        const resp = await fetch(`/parcelamentos/pagar/${id}/`, {
+          method: "POST",
+          headers: { "X-CSRFToken": "{{ csrf_token }}" }
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.status === "success") {
+          row?.classList.add("table-success");
+          row?.style.setProperty("opacity", "0.7");
+          setTimeout(() => row?.remove(), 500);
+        } else {
+          alert(data.message || "Não foi possível finalizar a parcela.");
+          this.disabled = false;
+          this.innerHTML = originalHTML;
+        }
+      } catch (e) {
+        alert("Ocorreu um erro ao finalizar a parcela.");
+        this.disabled = false;
+        this.innerHTML = originalHTML;
+      }
+    });
+  });
+});
+</script>
+
+{% endblock %}

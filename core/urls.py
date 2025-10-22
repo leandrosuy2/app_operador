@@ -99,6 +99,7 @@ urlpatterns = [
     path('agendamentos/buscar_devedores/', buscar_devedores, name='buscar_devedores'),
     path('consult-api/', views.consult_api, name='consult_api'),
     path('devedores/proximo/<int:titulo_id>/', views.proximo_cliente, name='proximo_cliente'),
+    path('iniciar-cobrancas/', views.iniciar_cobrancas, name='iniciar_cobrancas'),
 
 
    
