@@ -38,7 +38,7 @@ try:
     request.user = user
     
     # Testar view
-    response = realizar_baixa(request)
+    response = realizar_baixa(request, titulo.id)
     print(f"Status: {response.status_code}")
     
     if response.status_code == 200:
