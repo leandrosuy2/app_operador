@@ -3536,7 +3536,8 @@ def realizar_baixa(request, titulo_id):
 
     forma_pagamento_map = {0:"Pix",1:"Dinheiro",2:"Cartão de Débito",3:"Cartão de Crédito",
                            4:"Cheque",5:"Depósito em Conta",6:"Pagamento na Loja",
-                           7:"Boleto Bancário",8:"Duplicata",9:"Recebimento pelo credor"}
+                           7:"Boleto Bancário",8:"Duplicata",9:"Recebimento pelo credor",
+                           10:"Óbito confirmado"}
 
     if request.method == "POST":
         try:
@@ -3634,6 +3635,7 @@ def realizar_baixa(request, titulo_id):
         0:"Pix",1:"Dinheiro",2:"Cartão de Débito",3:"Cartão de Crédito",
         4:"Cheque",5:"Depósito em Conta",6:"Pagamento na Loja",
         7:"Boleto Bancário",8:"Duplicata",9:"Recebimento pelo credor",
+        10:"Óbito confirmado"
     }
 
     if request.method == "POST":
