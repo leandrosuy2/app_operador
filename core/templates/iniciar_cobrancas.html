@@ -146,11 +146,11 @@
                   </td>
                   <td>
                     {% if parcela.prioridade == 1 %}
-                      <span class="text-danger">-{{ parcela.dias_diferenca }} dias</span>
+                      <span class="text-danger">Vencida</span>
                     {% elif parcela.prioridade == 2 %}
                       <span class="text-warning">Hoje</span>
                     {% elif parcela.prioridade == 3 %}
-                      <span class="text-info">+{{ parcela.dias_diferenca }} dias</span>
+                      <span class="text-info">Próximo</span>
                     {% endif %}
                   </td>
                   <td>
