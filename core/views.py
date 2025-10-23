@@ -3084,6 +3084,41 @@ def quitar_parcela(request, titulo_id):
     return redirect("listar_titulos_por_devedor", titulo.devedor_id)
 
 
+@login_required
+def extornar_parcela(request, titulo_id):
+    """
+    Extorna uma parcela quitada, voltando o status para em aberto (statusBaixa = 0)
+    """
+    titulo = get_object_or_404(Titulo, id=titulo_id)
+    
+    # Verificar se o título está quitado
+    if titulo.statusBaixa != 2:
+        messages.error(request, "Apenas parcelas quitadas podem ser extornadas.")
+        return redirect("detalhes_devedor", titulo_id=titulo_id)
+    
+    if request.method == "POST":
+        try:
+            # Voltar o status para em aberto (0 = Pendente)
+            titulo.statusBaixa = 0
+            titulo.data_baixa = None
+            titulo.valorRecebido = None
+            titulo.forma_pag_Id = None
+            titulo.operador = None
+            # Manter o comprovante para histórico, mas não remover o arquivo
+            
+            titulo.save()
+            
+            messages.success(
+                request, f"Parcela {titulo.num_titulo} extornada com sucesso! Status alterado para em aberto."
+            )
+            
+        except Exception as e:
+            messages.error(request, f"Erro ao extornar parcela: {e}")
+            print(f"❌ Erro ao processar extorno da parcela: {e}")
+    
+    return redirect("detalhes_devedor", titulo_id=titulo_id)
+
+
 def default_acordo(request):
     if request.user.is_authenticated:
         acordo = Acordo.objects.first()  # Substitua com sua lógica de seleção

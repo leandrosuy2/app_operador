@@ -1077,6 +1077,9 @@
             <a href="{% url 'gerar_recibo' titulo.id %}" target="_blank" class="btn btn-sm btn-info">
               <i class="fas fa-file-pdf"></i> Gerar Recibo
             </a>
+            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalExtornar{{ titulo.id }}">
+              <i class="fas fa-undo"></i> Extornar
+            </button>
           {% endif %}
         </td>
       </tr>
@@ -1208,6 +1211,9 @@
               <a href="{% url 'gerar_recibo' titulo.id %}" target="_blank" class="btn btn-sm btn-info">
                 <i class="fas fa-file-pdf"></i> Gerar Recibo
               </a>
+              <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalExtornarAssoc{{ titulo.id }}">
+                <i class="fas fa-undo"></i> Extornar
+              </button>
             {% endif %}
             {% if titulo.statusBaixa == 0 or titulo.statusBaixa is none %}
               <a href="{% url 'realizar_acordo' titulo.id %}" class="btn btn-sm btn-success">
@@ -1300,6 +1306,79 @@
       {% endif %}
     </tbody>
   </table>
+
+  <!-- Modais de Extorno -->
+  {% for titulo in titulos_entrada %}
+    {% if titulo.statusBaixa == 2 %}
+    <!-- Modal Extornar Entrada -->
+    <div class="modal fade" id="modalExtornar{{ titulo.id }}" tabindex="-1" aria-labelledby="modalExtornarLabel{{ titulo.id }}" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form method="POST" action="{% url 'extornar_parcela' titulo.id %}">
+            {% csrf_token %}
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalExtornarLabel{{ titulo.id }}">Extornar Parcela</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Atenção!</strong> Esta ação irá extornar a parcela e voltar o status para "em aberto".
+              </div>
+              <p><strong>Título:</strong> {{ titulo.num_titulo }}</p>
+              <p><strong>Devedor:</strong> {{ titulo.devedor.nome|default:devedor.nome }}</p>
+              <p><strong>Valor:</strong> R$ {{ titulo.valor|floatformat:2 }}</p>
+              <p><strong>Status atual:</strong> <span class="badge bg-success">Quitado</span></p>
+              <p><strong>Status após extorno:</strong> <span class="badge bg-warning text-dark">Em aberto</span></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-warning">
+                <i class="fas fa-undo"></i> Confirmar Extorno
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+
+  {% for titulo in titulos_associados %}
+    {% if titulo.statusBaixa == 2 %}
+    <!-- Modal Extornar Associado -->
+    <div class="modal fade" id="modalExtornarAssoc{{ titulo.id }}" tabindex="-1" aria-labelledby="modalExtornarAssocLabel{{ titulo.id }}" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form method="POST" action="{% url 'extornar_parcela' titulo.id %}">
+            {% csrf_token %}
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalExtornarAssocLabel{{ titulo.id }}">Extornar Parcela</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Atenção!</strong> Esta ação irá extornar a parcela e voltar o status para "em aberto".
+              </div>
+              <p><strong>Título:</strong> {{ titulo.num_titulo }}</p>
+              <p><strong>Devedor:</strong> {{ titulo.devedor.nome|default:devedor.nome }}</p>
+              <p><strong>Valor:</strong> R$ {{ titulo.valor|floatformat:2 }}</p>
+              <p><strong>Status atual:</strong> <span class="badge bg-success">Quitado</span></p>
+              <p><strong>Status após extorno:</strong> <span class="badge bg-warning text-dark">Em aberto</span></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-warning">
+                <i class="fas fa-undo"></i> Confirmar Extorno
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
 
   <script>
     function validarValorRecebido(tituloId, valorMinimo) {

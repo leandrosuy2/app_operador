@@ -75,6 +75,7 @@ urlpatterns = [
   
      path('finalizar-titulo/<int:titulo_id>/', views.finalizar_titulo, name='finalizar_titulo'),
      path('quitar-parcela/<int:titulo_id>/', views.quitar_parcela, name='quitar_parcela'),
+     path('extornar-parcela/<int:titulo_id>/', views.extornar_parcela, name='extornar_parcela'),
 
      
      #Anexar e baixar contrato
