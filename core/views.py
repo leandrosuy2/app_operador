@@ -3898,6 +3898,7 @@ from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from core.decorators import group_required
 from core.models import Titulo, Devedor, Empresa
+from django.conf import settings
 
 @login_required
 def gerar_recibo(request, titulo_id):
@@ -3916,10 +3917,25 @@ def gerar_recibo(request, titulo_id):
     # >>> URL da logo (segura)
     logo_url = ""
     try:
-        if getattr(empresa, "logo", None) and getattr(empresa.logo, "name", ""):
-            # absoluta para evitar bloqueio em impressão
-            logo_url = request.build_absolute_uri(empresa.logo.url)
-    except Exception:
+        # Verificar se a empresa tem logo e se o arquivo existe
+        if hasattr(empresa, 'logo') and empresa.logo:
+            logo_field = empresa.logo
+            if hasattr(logo_field, 'name') and logo_field.name:
+                # Verificar se o arquivo realmente existe no sistema de arquivos
+                import os
+                logo_path = os.path.join(settings.MEDIA_ROOT, logo_field.name)
+                if os.path.exists(logo_path):
+                    logo_url = request.build_absolute_uri(logo_field.url)
+                    print(f"DEBUG: Logo URL gerada: {logo_url}")  # Debug
+                    print(f"DEBUG: Logo path: {logo_path}")  # Debug
+                else:
+                    print(f"DEBUG: Arquivo de logo não encontrado: {logo_path}")  # Debug
+            else:
+                print(f"DEBUG: Logo field sem nome: {logo_field}")  # Debug
+        else:
+            print(f"DEBUG: Empresa sem logo field ou logo vazia")  # Debug
+    except Exception as e:
+        print(f"DEBUG: Erro ao gerar logo URL: {e}")  # Debug
         logo_url = ""
 
     # Comprovante do título (se houver)

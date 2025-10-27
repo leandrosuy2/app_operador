@@ -182,7 +182,8 @@ LOGGING = {
     },
 }
 # ===== Overrides produção (operador) =====
-DEBUG = False
+# DEBUG = False  # Comentado temporariamente para debug da logo
+DEBUG = True  # Temporário para debug
 
 ALLOWED_HOSTS = [
     'operador.negociarcobrancas.com.br',
