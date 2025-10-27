@@ -2254,6 +2254,7 @@ def listar_titulos_por_devedor(request, devedor_id):
             "titulos_entrada":  titulos_entrada,
             "entrada_ids":      entrada_ids,
             "devedor_id":       devedor_id,
+            "devedor":          get_object_or_404(Devedor, id=devedor_id),
             "total_quitado":    total_quitado,
             "total_negociado":  total_negociado,
             "total_pendente":   total_pendente,
@@ -2298,7 +2299,7 @@ def negociacao_devedor(request, devedor_id):
         "total_negociado": total_negociado,
         "total_pendente": total_pendente,
     }
-    return render(request, "negociacao_devedor.html", context)
+    return render(request, "titulos_listar_por_devedor.html", context)
 
 
 @login_required
