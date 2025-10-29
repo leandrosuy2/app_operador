@@ -4504,13 +4504,18 @@ def detalhes_devedor(request, titulo_id):
     )
     tpl_padrao = (
         "NOTIFICAÇÃO EXTRAJUDICIAL\n\n"
-        "Olá, me Chamo %NomeConsultor%.\n\n"
-        "Nesse contato eu falo com %Nome%, portado do documento %CpfCnpjMascarado% ?\n\n"
-        "Digite - 01 - Para SIM\n"
-        "Digite - 02 - Para NÃO\n\n"
-        "Temos uma informação importante referente a empresa %NomeCredor%\n\n"
-        "Caso eu demora a responder, me chama no contato abaixo:\n\n"
-        "Central de Atendimento e Negociações: wa.me://5591991600118"
+        "Prezado (a) Cliente %Nome%*, portador do documento de CPF/CNPJ nº: *%CpfCnpjMascarado%*\n\n"
+        "Me chamo %NomeConsultor%, falo em nome da Negociar Cobranças, empresa contratada por %NomeCredor%\n\n"
+        "Comunicamos a existência de valores não pagos junto à empresa %NomeCredor%.\n\n"
+        "Solicitamos sua resposta ou comparecimento à loja no prazo de *72 Horas* após o recebimento dessa Notificação, para tratar de assuntos de sua *RESPONSABILIDADE* e *INTERESSE*.\n\n"
+        "Entretanto, não sendo e não conhecendo a pessoa acima, pedimos que desconsidere a nossa mensagem.\n\n"
+        "Nos colocamos à sua inteira disposição para sanar toda e qualquer dúvida referente à nossa notificação, acesse os canais abaixo:\n\n"
+        "Central de Atendimento e Negociações:\n"
+        "WhatsApp: 91991600118\n\n"
+        "Atenciosamente,\n"
+        "%NomeConsultor%\n"
+        "Atendimento ao Cliente\n"
+        "Negociar Cobranças"
     )
     tpl_quebra = (
         "Olá, tudo bem contigo ?\n\n"
