@@ -2964,6 +2964,130 @@ def realizar_acordo(request, titulo_id):
 
 
 
+@login_required
+def reparcelar_acordo(request, titulo_id):
+    """Reparcelar um acordo existente (cabeçalho `Titulo` com parcelas filhas).
+
+    Regras essenciais:
+    - Só permite se existir acordo (cabeçalho com idTituloRef is null) e parcelas pendentes (statusBaixa != 2).
+    - Calcula saldo com base nas parcelas vencidas e a vencer ainda não quitadas.
+    - Cria um NOVO cabeçalho de acordo e novas parcelas, vinculando ao acordo anterior via `acordo_anterior`.
+    - Mantém o acordo original com flag `renegociado = True`.
+    """
+    original = get_object_or_404(Titulo, id=titulo_id, idTituloRef__isnull=True)
+
+    hoje = date.today()
+    parcelas_qs = Titulo.objects.filter(idTituloRef=original.id)
+    parcelas_pendentes = parcelas_qs.exclude(statusBaixa=2)
+
+    if not parcelas_pendentes.exists():
+        messages.error(request, "Não há parcelas pendentes para reparcelamento.")
+        return redirect("detalhes_devedor", titulo_id=original.id)
+
+    # Totais
+    total_vencido = sum((p.valor or 0) for p in parcelas_pendentes if p.dataVencimento and p.dataVencimento <= hoje)
+    total_vincendo = sum((p.valor or 0) for p in parcelas_pendentes if p.dataVencimento and p.dataVencimento > hoje)
+    saldo_total = (total_vencido or 0) + (total_vincendo or 0)
+
+    # Juros/multas/encargos adicionais: política simplificada (ponto de extensão)
+    juros_adicionais = 0.0
+
+    if request.method == "POST":
+        data = request.POST
+        try:
+            entrada = float(data.get("entrada", 0))
+            qtde_prc = int(data.get("qtde_prc", 0))
+            valor_total_negociacao = float(data.get("valor_total_negociacao", 0))
+
+            lista_valores = [v for v in data.getlist("parcelas_valor[]") if str(v).strip() != ""]
+            lista_datas = data.getlist("parcelas_data[]")
+
+            if entrada < 0 or qtde_prc <= 0:
+                raise ValueError("Entrada deve ser >= 0 e a quantidade de parcelas > 0.")
+            if len(lista_valores) != qtde_prc:
+                raise ValueError("Quantidade de valores de parcelas não confere com a quantidade informada.")
+
+            soma_parcelas = sum(float(x or 0) for x in lista_valores)
+            esperado = max(valor_total_negociacao - entrada, 0)
+            if abs(soma_parcelas - esperado) > 0.02:
+                raise ValueError(
+                    f"A soma das parcelas (R$ {soma_parcelas:.2f}) precisa bater com o total negociado menos a entrada (R$ {esperado:.2f})."
+                )
+
+            # Criar novo cabeçalho do acordo
+            venc_primeira_parcela = data.get("venc_primeira_parcela")
+            data_emissao = hoje
+            data_vencimento_cab = datetime.strptime(venc_primeira_parcela, "%Y-%m-%d").date() if venc_primeira_parcela else hoje
+
+            novo_cabecalho = Titulo.objects.create(
+                devedor=original.devedor,
+                empresa=original.empresa,
+                idTituloRef=None,
+                num_titulo=original.num_titulo,
+                tipo_doc=original.tipo_doc,
+                dataEmissao=data_emissao,
+                dataVencimento=data_vencimento_cab,
+                dataVencimentoReal=data_vencimento_cab,
+                dataVencimentoPrimeira=data_vencimento_cab,
+                valor=saldo_total + float(juros_adicionais or 0),
+                juros=juros_adicionais,
+                valorRecebido=entrada,
+                total_acordo=entrada + soma_parcelas,
+                qtde_parcelas=qtde_prc,
+                statusBaixa=3,  # negociado
+                operador=request.user.username,
+                acordo_anterior=original,
+            )
+
+            # Criar parcelas do novo acordo
+            base = data_vencimento_cab
+            criar_datas = not lista_datas or len(lista_datas) != qtde_prc
+            for i in range(qtde_prc):
+                valor_i = float(lista_valores[i])
+                data_venc_i = (base + relativedelta(months=i)) if criar_datas else datetime.strptime(lista_datas[i], "%Y-%m-%d").date()
+
+                Titulo.objects.create(
+                    idTituloRef=novo_cabecalho.id,
+                    devedor=novo_cabecalho.devedor,
+                    empresa=novo_cabecalho.empresa,
+                    num_titulo=novo_cabecalho.num_titulo,
+                    tipo_doc=novo_cabecalho.tipo_doc,
+                    dataEmissao=hoje,
+                    dataVencimento=data_venc_i,
+                    dataVencimentoReal=data_venc_i,
+                    dataVencimentoPrimeira=venc_primeira_parcela if i == 0 else None,
+                    valor=valor_i,
+                    qtde_parcelas=qtde_prc,
+                    nPrc=i + 1,
+                    statusBaixa=3,
+                    operador=request.user.username,
+                )
+
+            # Marcar acordo original como renegociado
+            original.renegociado = True
+            original.save(update_fields=["renegociado"])
+
+            messages.success(request, "Reparcelamento realizado com sucesso!")
+            return redirect("listar_titulos_por_devedor", novo_cabecalho.devedor.id)
+
+        except ValueError as e:
+            messages.error(request, f"Erro nos valores fornecidos: {e}")
+        except Exception as e:
+            messages.error(request, f"Erro inesperado ao reparcelar: {e}")
+
+    context = {
+        "acordo_original": original,
+        "titulo": original,  # para reaproveitar variáveis de template
+        "data_vencimento_formatada": hoje.strftime("%d/%m/%Y"),
+        "juros_totais": juros_adicionais,
+        "diferenca_dias": 0,
+        "valor_total_com_juros": (saldo_total + juros_adicionais),
+        "total_vencido": total_vencido,
+        "total_vincendo": total_vincendo,
+        "saldo_total": saldo_total,
+    }
+    return render(request, "reparcelar_acordo.html", context)
+
 def buscar_email_empresa(core_empresa_id):
     """Busca o e-mail da empresa pelo core_empresa.id, garantindo apenas um resultado."""
     with connection.cursor() as cursor:

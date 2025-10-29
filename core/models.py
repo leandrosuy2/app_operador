@@ -160,6 +160,12 @@ class Titulo(models.Model):
     comprovante = models.FileField(upload_to='comprovantes/', null=True, blank=True)
     contrato = models.FileField(upload_to='contratos/', null=True, blank=True)
     operador = models.CharField(max_length=255, null=True, blank=True, verbose_name="Operador")
+    # Vínculo para reparcelamento: novo acordo pode apontar para o acordo original
+    acordo_anterior = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='reparcelamentos', verbose_name="Acordo Anterior"
+    )
+    # Marca se este título (acordo) foi renegociado em outro acordo
+    renegociado = models.BooleanField(default=False, verbose_name="Renegociado")
     @property
     def valor_com_juros(self):
         return self.valor + self.juros

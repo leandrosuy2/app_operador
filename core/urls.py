@@ -1,6 +1,6 @@
 from django.urls import path, include
 from . import views
-from .views import listar_devedores, listar_titulos_por_devedor, adicionar_devedor, editar_devedor, excluir_devedor, realizar_acordo, listar_acordos, pagar_parcela, detalhar_parcela, listar_empresas, adicionar_empresa, editar_empresa, excluir_empresa, consultar_cnpj_view,  gerar_contrato, anexar_contrato, baixar_contrato_view, gerar_contrato_lojista, gerar_ficha_lojista, buscar_dados_api_cliente, editar_titulo, alterar_status_empresa,  buscar_devedores, proximo_cliente
+from .views import listar_devedores, listar_titulos_por_devedor, adicionar_devedor, editar_devedor, excluir_devedor, realizar_acordo, reparcelar_acordo, listar_acordos, pagar_parcela, detalhar_parcela, listar_empresas, adicionar_empresa, editar_empresa, excluir_empresa, consultar_cnpj_view,  gerar_contrato, anexar_contrato, baixar_contrato_view, gerar_contrato_lojista, gerar_ficha_lojista, buscar_dados_api_cliente, editar_titulo, alterar_status_empresa,  buscar_devedores, proximo_cliente
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LogoutView
 from django.conf.urls import handler403, static
@@ -37,6 +37,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('api/consultar-devedor/', views.consult_api, name='consult_api'),
     path('titulos/<int:titulo_id>/acordo/', views.realizar_acordo, name='realizar_acordo'),    
+    path('acordos/<int:titulo_id>/reparcelar/', views.reparcelar_acordo, name='reparcelar_acordo'),
     path('acordos/listar/', views.listar_acordos, name='acordos_listar'),
     path('parcelamentos/', views.listar_parcelamentos, name='listar_parcelamentos'),
     path('parcelamentos/pagar/<int:parcela_id>/', pagar_parcela, name='pagar_parcela'), 

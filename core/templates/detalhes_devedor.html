@@ -1072,6 +1072,9 @@
               <i class="fas fa-check"></i> Quitar
             </button>
             <a href="{% url 'editar_titulo' titulo.id %}" class="btn btn-warning">Editar</a>
+            <a href="{% url 'reparcelar_acordo' titulo.id %}" class="btn btn-outline-secondary btn-sm">
+              <i class="fas fa-redo"></i> Reparcelar acordo
+            </a>
           {% endif %}
           {% if titulo.statusBaixa == 2 %}
             <a href="{% url 'gerar_recibo' titulo.id %}" target="_blank" class="btn btn-sm btn-info">
