@@ -4480,6 +4480,7 @@ def detalhes_devedor(request, titulo_id):
     cpf_cnpj_mascarado = mascarar_documento(cpf_cnpj) if cpf_cnpj else "N/A"
     nome_consultor = request.user.get_full_name() or request.user.username
     nome_credor = (getattr(empresa, "nome_fantasia", None) or "NomeCredor")
+    telefone_consultor = getattr(request.user, 'telefone', None) or '(91) 99160-0118'
 
     # ----- Mensagens Whats (vencidas/quebra com valor+juros)
     qtde_vencidas = len(vencidas)
