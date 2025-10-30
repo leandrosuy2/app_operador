@@ -4455,6 +4455,7 @@ def detalhes_devedor(request, titulo_id):
     total_vencidas = sum((valor_com_juros(t) for t in vencidas), Decimal("0.00"))
     total_quebra = sum((valor_com_juros(t) for t in nao_quitados), Decimal("0.00"))
     valor_corrigido = total_vencidas  # Adicionando definição de valor_corrigido para mensagens
+    data_vencimento_origem = titulo.dataVencimento
 
     # ----- Extras
     forma_pagamento_map = {
