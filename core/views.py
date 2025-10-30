@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth import authenticate, login
-# lsdls
+
 from .models import (
     Devedor,
     Empresa,
