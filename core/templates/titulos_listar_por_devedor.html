@@ -192,6 +192,7 @@
         <th>Forma de Pagamento</th>
         <th>Vencimento</th>
         <th>Data de Baixa</th>
+        <th>Operador baixa</th>
         <th>Juros</th>
         <th>Total com juros</th>
         <th>Dias atraso</th>
@@ -216,6 +217,7 @@
               <td>
                 {% if titulo.data_baixa %}{{ titulo.data_baixa|date:"d/m/Y" }}{% else %}-{% endif %}
               </td>
+              <td>{{ titulo.operador|default:'-' }}</td>
               <td>{{ titulo.juros|floatformat:2 }}</td>
               <td>{{ titulo.valor_com_juros|floatformat:2 }}</td>
               <td>{{ titulo.dias_atraso }}</td>

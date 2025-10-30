@@ -2162,7 +2162,8 @@ def listar_titulos_por_devedor(request, devedor_id):
                 titulo.idTituloRef,
                 titulo.comprovante          AS comprovante_path,
                 titulo.juros,
-                titulo.dias_atraso
+                titulo.dias_atraso,
+                titulo.operador            AS operador
             FROM titulo
             INNER JOIN devedores   ON titulo.devedor_id  = devedores.id
             INNER JOIN core_empresa ON devedores.empresa_id = core_empresa.id
@@ -2224,6 +2225,7 @@ def listar_titulos_por_devedor(request, devedor_id):
             "juros":            juros,
             "dias_atraso":      row[idx['dias_atraso']] or 0,
             "valor_com_juros":  valor + juros,
+            "operador":         row[idx['operador']] or "",
         }
 
         # comprovante
@@ -4070,6 +4072,7 @@ def gerar_recibo(request, titulo_id):
         comp_field = getattr(titulo, "comprovante", None)
         if comp_field:
             comp_url = request.build_absolute_uri(comp_field.url)
+            import os
             ext = os.path.splitext(getattr(comp_field, "name", ""))[1].lower()
             comp_is_image = ext in [".png", ".jpg", ".jpeg", ".gif", ".webp"]
     except Exception:
