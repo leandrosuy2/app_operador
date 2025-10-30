@@ -1439,7 +1439,7 @@
             <td>{{ agendamento.data_abertura|date:"d/m/Y H:i" }}</td>
             <td>{{ agendamento.data_retorno|date:"d/m/Y H:i" }}</td>
             <td>{{ agendamento.assunto }}</td>
-            <td>{{ agendamento.operador.get_full_name|default:agendamento.operador.first_name|default:agendamento.operador.username }}</td>
+            <td>{{ agendamento.operador|default:"-" }}</td>
 
             <td>{{ agendamento.get_status_display }}</td>
             <td>
