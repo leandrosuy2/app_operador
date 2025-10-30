@@ -4548,6 +4548,9 @@ def detalhes_devedor(request, titulo_id):
         "%CpfCnpjMascarado%": cpf_cnpj_mascarado,
         "%NomeConsultor%": nome_consultor,
         "%NomeCredor%": nome_credor,
+        "%ValorDebitoCorrigido%": _format_brl(valor_corrigido),
+        "%DataVencimentoOrigem%": data_vencimento_origem.strftime("%d/%m/%Y") if data_vencimento_origem else "",
+        "%TelefoneConsultor%": telefone_consultor or ""
     }
 
     def _apply(tpl, mapping):
