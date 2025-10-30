@@ -4529,9 +4529,9 @@ def detalhes_devedor(request, titulo_id):
         "Caso já tenha efetuado o pagamento, por favor, desconsidere esta notificação e envie o comprovante para o WhatsApp *91991600118*.\nPara que possamos dar baixa em nosso sistema.\n\n"
         "Para esclarecimentos ou negociação, entre em contato conosco pela Central de atendimento no WhatsApp *91991600118*.\n\n"
         "Atenciosamente,\n"
-        "*%NomeConsultor%*\n"
-        "*%NomeCredor%*\n"
-        "*%TelefoneConsultor%*"
+        "%NomeConsultor%\n"
+        "Atendimento ao Cliente\n"
+        "Negociar Cobranças"
     )
     tpl_quebra = (
         "Olá, tudo bem contigo ?\n\n"
