@@ -4517,7 +4517,7 @@ def detalhes_devedor(request, titulo_id):
     tpl_padrao = (
         "*Notificação Extrajudicial de Cobrança*\n\n"
         "Prezado(a) *%Nome%*, portador do CPF e/ou CNPJ nº *%CpfCnpjMascarado%*\n\n"
-        "A presente comunicação tem o objetivo de informar e solicitar a regularização de uma pendência junto à empresa *%NomeCredor*.\n"
+        "A presente comunicação tem o objetivo de informar e solicitar a regularização de uma pendência junto à empresa *%NomeCredor%*.\n\n"
         "Consta em nossos registros que o valor de *R$ %ValorDebitoCorrigido%* não foi quitado. A data de vencimento original foi em *%DataVencimentoOrigem%*.\n\n"
         "Reiteramos que este é um aviso formal de cobrança extrajudicial.\n"
         "Caso o pagamento e/ou negociação amigável não seja realizado em até 72 horas a partir do recebimento desta notificação, informamos que serão tomadas as seguintes medidas:\n\n"
