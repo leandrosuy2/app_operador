@@ -178,7 +178,7 @@ def dashboard(request):
         # - Escolhe 1 título representativo por devedor (maior atraso; desempate: maior valor, menor id)
         # - Disponíveis: dias_atraso > 60 e sem operador atribuído
         # - Exclui devedores já sugeridos no DIA (para qualquer operador) e
-        #   devedores já sugeridos ao MESMO operador em qualquer dia (garante “nunca repetir”)
+        #   devedores já sugeridos ao MESMO operador em qualquer dia (garante "nunca repetir")
         with connection.cursor() as c:
             c.execute(
                 """
@@ -4011,13 +4011,19 @@ def listar_parcelamentos(request):
     paginator = Paginator(parcelamentos, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-
-    # Renderizar o template com os dados
-    return render(
-        request,
-        "parcelamentos_listar.html",  # Nome do template para exibir os parcelamentos
-        {"page_obj": page_obj, "query": query},
-    )
+    
+    context = {
+        'parcelas_vencidas': parcelas_vencidas,
+        'parcelas_hoje': parcelas_hoje,
+        'parcelas_proximas': parcelas_proximas,
+        'total_parcelas': len(parcelas_organizadas),
+        'page_obj': page_obj,
+        'hoje': hoje,
+        'data_30_dias_atras': data_30_dias_atras,
+        'data_5_dias_frente': data_5_dias_frente,
+    }
+    
+    return render(request, 'iniciar_cobrancas.html', context)
 
 
 import base64
@@ -4448,6 +4454,8 @@ def detalhes_devedor(request, titulo_id):
     saldo_pendente = sum((valor_com_juros(t) for t in pendentes), Decimal("0.00"))
     total_vencidas = sum((valor_com_juros(t) for t in vencidas), Decimal("0.00"))
     total_quebra = sum((valor_com_juros(t) for t in nao_quitados), Decimal("0.00"))
+    valor_corrigido = total_vencidas  # Adicionando definição de valor_corrigido para mensagens
+    data_vencimento_origem = titulo.dataVencimento
 
     # ----- Extras
     forma_pagamento_map = {
@@ -4472,6 +4480,7 @@ def detalhes_devedor(request, titulo_id):
     cpf_cnpj_mascarado = mascarar_documento(cpf_cnpj) if cpf_cnpj else "N/A"
     nome_consultor = request.user.get_full_name() or request.user.username
     nome_credor = (getattr(empresa, "nome_fantasia", None) or "NomeCredor")
+    telefone_consultor = getattr(request.user, 'telefone', None) or '(91) 99160-0118'
 
     # ----- Mensagens Whats (vencidas/quebra com valor+juros)
     qtde_vencidas = len(vencidas)
@@ -4506,17 +4515,21 @@ def detalhes_devedor(request, titulo_id):
         "%NomeConsultor%"
     )
     tpl_padrao = (
-        "NOTIFICAÇÃO EXTRAJUDICIAL\n\n"
-        "Prezado (a) Cliente *%Nome%*, portador do documento de CPF/CNPJ nº: *%CpfCnpjMascarado%*\n\n"
-        "Me chamo *%NomeConsultor%*, falo em nome da Negociar Cobranças, empresa contratada por *%NomeCredor%*\n\n"
-        "Comunicamos a existência de valores não pagos junto à empresa *%NomeCredor%*.\n\n"
-        "Solicitamos sua resposta ou comparecimento à loja no prazo de *72 Horas* após o recebimento dessa Notificação, para tratar de assuntos de sua *RESPONSABILIDADE* e *INTERESSE*.\n\n"
-        "Entretanto, não sendo e não conhecendo a pessoa acima, pedimos que desconsidere a nossa mensagem.\n\n"
-        "Nos colocamos à sua inteira disposição para sanar toda e qualquer dúvida referente à nossa notificação, acesse os canais abaixo:\n\n"
-        "Central de Atendimento e Negociações:\n"
-        "WhatsApp: *91991600118*\n\n"
+        "*Notificação Extrajudicial de Cobrança*\n\n"
+        "Prezado(a) *%Nome%*, portador do CPF e/ou CNPJ nº *%CpfCnpjMascarado%*\n\n"
+        "A presente comunicação tem o objetivo de informar e solicitar a regularização de uma pendência junto à empresa *%NomeCredor%*.\n\n"
+        "Consta em nossos registros que o valor de *R$ %ValorDebitoCorrigido%* não foi quitado. A data de vencimento original foi em *%DataVencimentoOrigem%*.\n\n"
+        "Reiteramos que este é um aviso formal de cobrança extrajudicial.\n"
+        "Caso o pagamento e/ou negociação amigável não seja realizado em até 72 horas a partir do recebimento desta notificação, informamos que serão tomadas as seguintes medidas:\n\n"
+        "• *Apresentação do mesmo à mesa de acionamento Jurídico:*\n"
+        "Onde será analisado o seu caso para um possível acionamento pelo ato de comprar e não pagar.\n\n"
+        "• *Inscrição nos órgãos de proteção ao crédito:* Seu nome poderá ser incluído nos cadastros do SPC/Serasa e Cartório.\n\n"
+        "• *Medidas judiciais:*\nPoderá ser iniciada uma ação judicial para o recebimento da dívida, acrescida de juros, multas e honorários advocatícios.\n\n"
+        "Com o intuito de evitar essas medidas, que acarretarão custos adicionais, solicitamos que promova a quitação do débito o mais rápido possível.\n\n"
+        "Caso já tenha efetuado o pagamento, por favor, desconsidere esta notificação e envie o comprovante para o WhatsApp *91991600118*.\nPara que possamos dar baixa em nosso sistema.\n\n"
+        "Para esclarecimentos ou negociação, entre em contato conosco pela Central de atendimento no WhatsApp *91991600118*.\n\n"
         "Atenciosamente,\n"
-        "*%NomeConsultor%*\n"
+        "%NomeConsultor%\n"
         "Atendimento ao Cliente\n"
         "Negociar Cobranças"
     )
@@ -4538,6 +4551,9 @@ def detalhes_devedor(request, titulo_id):
         "%CpfCnpjMascarado%": cpf_cnpj_mascarado,
         "%NomeConsultor%": nome_consultor,
         "%NomeCredor%": nome_credor,
+        "%ValorDebitoCorrigido%": _format_brl(valor_corrigido),
+        "%DataVencimentoOrigem%": data_vencimento_origem.strftime("%d/%m/%Y") if data_vencimento_origem else "",
+        "%TelefoneConsultor%": telefone_consultor or ""
     }
 
     def _apply(tpl, mapping):
