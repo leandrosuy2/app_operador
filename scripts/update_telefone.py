@@ -14,7 +14,7 @@ DB_CONFIG = {
 }
 
 # Configurações da API
-ACCESS_TOKEN = 'h2XxFszVMoRgjQCBkn5WejKDmor2BNl5I2ko1i4q'
+ACCESS_TOKEN = 'tJ42EaCc79G6RTEDGwM5ZBbJYjWz53WTI33iJSZZ'
 API_BASE_URL = 'https://api.lemit.com.br/api/v1/consulta'
 
 
