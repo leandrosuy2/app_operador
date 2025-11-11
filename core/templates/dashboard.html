@@ -1,136 +1,386 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- CSS correto (não use <script> para CSS) -->
+<!-- CSS Moderno e Responsivo -->
 <style>
-  .card-equal { height: 100%; }
-  .card-body { display:flex; flex-direction:column; justify-content:space-between; height:100%; }
-  /* NÃO sobrescrevemos .row.g-3 para não quebrar o grid do Bootstrap */
+  /* Container de cards */
+  .dashboard-cards {
+    margin-bottom: 2rem;
+  }
+
+  /* Cards base */
+  .dashboard-card {
+    height: 100%;
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  .dashboard-card:active {
+    transform: translateY(-4px) scale(1.01);
+  }
+
+  /* Overlay decorativo */
+  .dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+  }
+
+  /* Padrões de gradiente por card */
+  .card-pendentes {
+    --gradient-start: #1abb9c;
+    --gradient-end: #16a085;
+  }
+
+  .card-quitados {
+    --gradient-start: #3498db;
+    --gradient-end: #2980b9;
+  }
+
+  .card-negociados {
+    --gradient-start: #f39c12;
+    --gradient-end: #e67e22;
+  }
+
+  .card-total-recebido {
+    --gradient-start: #e74c3c;
+    --gradient-end: #c0392b;
+  }
+
+  .card-negociados-atraso {
+    --gradient-start: #ff6f61;
+    --gradient-end: #d9534f;
+  }
+
+  .card-quitados-hoje {
+    --gradient-start: #3498db;
+    --gradient-end: #2980b9;
+  }
+
+  .card-negociados-hoje {
+    --gradient-start: #34495e;
+    --gradient-end: #2c3e50;
+  }
+
+  .card-iniciar-cobrancas {
+    --gradient-start: #dc3545;
+    --gradient-end: #c82333;
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.3), 0 2px 4px -1px rgba(220, 53, 69, 0.2);
+    }
+    50% {
+      box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.5), 0 2px 4px -1px rgba(220, 53, 69, 0.4);
+    }
+  }
+
+  /* Body do card */
+  .dashboard-card-body {
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    min-height: 180px;
+    position: relative;
+    z-index: 1;
+    color: white;
+  }
+
+  /* Título do card */
+  .dashboard-card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+    opacity: 0.95;
+    line-height: 1.3;
+  }
+
+  /* Valor/Número principal */
+  .dashboard-card-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    letter-spacing: -0.5px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: nowrap;
+  }
+
+  /* Subtítulo/Descrição */
+  .dashboard-card-subtitle {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    font-weight: 500;
+    margin-top: 0.25rem;
+  }
+
+  /* Ícone */
+  .dashboard-card-icon {
+    font-size: 3.5rem;
+    opacity: 0.25;
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .dashboard-card:hover .dashboard-card-icon {
+    opacity: 0.35;
+    transform: scale(1.1) rotate(5deg);
+  }
+
+  /* Layout responsivo */
+  @media (max-width: 1199px) {
+    .dashboard-card-value {
+      font-size: 2rem;
+    }
+    .dashboard-card-icon {
+      font-size: 3rem;
+    }
+  }
+
+  @media (max-width: 991px) {
+    .dashboard-card-body {
+      min-height: 160px;
+      padding: 1.5rem;
+    }
+    .dashboard-card-value {
+      font-size: 1.75rem;
+    }
+    .dashboard-card-icon {
+      font-size: 2.75rem;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .dashboard-card-body {
+      min-height: 140px;
+      padding: 1.25rem;
+    }
+    .dashboard-card-value {
+      font-size: 1.5rem;
+    }
+    .dashboard-card-title {
+      font-size: 0.85rem;
+    }
+    .dashboard-card-icon {
+      font-size: 2.5rem;
+      bottom: 0.75rem;
+      right: 0.75rem;
+    }
+  }
+
+  @media (max-width: 575px) {
+    .dashboard-card-body {
+      min-height: 130px;
+      padding: 1rem;
+    }
+    .dashboard-card-value {
+      font-size: 1.35rem;
+      line-height: 1.1;
+    }
+    .dashboard-card-icon {
+      font-size: 2.25rem;
+    }
+    .dashboard-card-title {
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  /* Ajuste para valores monetários muito grandes em telas pequenas */
+  @media (max-width: 400px) {
+    .dashboard-card-value {
+      font-size: 1.15rem;
+      white-space: normal;
+    }
+  }
+
+  /* Link sem decoração */
+  .dashboard-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    height: 100%;
+  }
+
+  .dashboard-card-link:hover {
+    color: inherit;
+  }
 </style>
 
 <div class="container mt-4">
-  <div class="row g-3">
+  <div class="row g-4 dashboard-cards">
     <!-- Card Pendentes -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow border-0 card-equal" style="background:linear-gradient(135deg,#1abb9c,#16a085);">
-        <div class="card-body text-white d-flex flex-column justify-content-between align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
+      <div class="dashboard-card card-pendentes">
+        <div class="dashboard-card-body">
           <div>
-            <h5 class="fw-bold">Pendentes</h5>
-            <p class="fs-2 mb-0 count-number" data-count="{{ titulos_pendentes }}">0</p>
+            <h5 class="dashboard-card-title">Pendentes</h5>
+            <p class="dashboard-card-value count-number mb-0" data-count="{{ titulos_pendentes }}">0</p>
           </div>
-          <i class="fas fa-file-alt fa-4x opacity-75"></i>
+          <i class="fas fa-file-alt dashboard-card-icon"></i>
         </div>
       </div>
     </div>
 
     <!-- Card Quitados -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow border-0 card-equal" style="background:linear-gradient(135deg,#3498db,#2980b9);">
-        <div class="card-body text-white d-flex flex-column justify-content-between align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
+      <div class="dashboard-card card-quitados">
+        <div class="dashboard-card-body">
           <div>
-            <h5 class="fw-bold">Quitados</h5>
-            <p class="fs-2 mb-0 count-number" data-count="{{ titulos_quitados }}">0</p>
+            <h5 class="dashboard-card-title">Quitados</h5>
+            <p class="dashboard-card-value count-number mb-0" data-count="{{ titulos_quitados }}">0</p>
           </div>
-          <i class="fas fa-check-circle fa-4x opacity-75"></i>
+          <i class="fas fa-check-circle dashboard-card-icon"></i>
         </div>
       </div>
     </div>
 
     <!-- Card Negociados -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow border-0 card-equal" style="background:linear-gradient(135deg,#f39c12,#e67e22);">
-        <div class="card-body text-white d-flex flex-column justify-content-between align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
+      <div class="dashboard-card card-negociados">
+        <div class="dashboard-card-body">
           <div>
-            <h5 class="fw-bold">Negociados</h5>
-            <p class="fs-2 mb-0 count-number" data-count="{{ titulos_negociados }}">0</p>
+            <h5 class="dashboard-card-title">Negociados</h5>
+            <p class="dashboard-card-value count-number mb-0" data-count="{{ titulos_negociados }}">0</p>
           </div>
-          <i class="fas fa-handshake fa-4x opacity-75"></i>
+          <i class="fas fa-handshake dashboard-card-icon"></i>
         </div>
       </div>
     </div>
 
     <!-- Card Total Recebido no Mês -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow border-0 card-equal" style="background:linear-gradient(135deg,#e74c3c,#c0392b);">
-        <div class="card-body text-white d-flex flex-column justify-content-between align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
+      <div class="dashboard-card card-total-recebido">
+        <div class="dashboard-card-body">
           <div>
-            <h5 class="fw-bold">Total Recebido</h5>
-            <p class="fs-2 mb-0">R$ {{ total_recebido_mes|floatformat:2 }}</p>
-            <small class="opacity-75">Este Mês</small>
+            <h5 class="dashboard-card-title">Total Recebido</h5>
+            <p class="dashboard-card-value mb-0">R$ {{ total_recebido_mes|floatformat:2 }}</p>
+            <p class="dashboard-card-subtitle mb-0">Este Mês</p>
           </div>
-          <i class="fas fa-trophy fa-4x opacity-75"></i>
+          <i class="fas fa-trophy dashboard-card-icon"></i>
         </div>
       </div>
     </div>
 
     <!-- Card Negociados em Atraso -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow border-0 card-equal" style="background:linear-gradient(135deg,#ff6f61,#d9534f);">
-        <div class="card-body text-white d-flex flex-column justify-content-between align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
+      <div class="dashboard-card card-negociados-atraso">
+        <div class="dashboard-card-body">
           <div>
-            <h5 class="fw-bold">Negociados em Atraso</h5>
-            <p class="fs-2 mb-0 count-number" data-count="{{ negociados_em_atraso_count }}">0</p>
+            <h5 class="dashboard-card-title">Negociados em Atraso</h5>
+            <p class="dashboard-card-value count-number mb-0" data-count="{{ negociados_em_atraso_count }}">0</p>
           </div>
-          <i class="fas fa-exclamation-circle fa-4x opacity-75"></i>
+          <i class="fas fa-exclamation-circle dashboard-card-icon"></i>
         </div>
       </div>
     </div>
 
     <!-- Card Quitados Hoje (abre modal) -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow border-0 card-equal" style="background:linear-gradient(135deg,#3498db,#2980b9);" data-bs-toggle="modal" data-bs-target="#modalQuitadosHoje">
-        <div class="card-body text-white d-flex flex-column justify-content-between align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
+      <div class="dashboard-card card-quitados-hoje" data-bs-toggle="modal" data-bs-target="#modalQuitadosHoje">
+        <div class="dashboard-card-body">
           <div>
-            <h5 class="fw-bold">Quitados Hoje</h5>
-            <p class="fs-2 mb-0">R$ {{ quitados_hoje|floatformat:2 }}</p>
+            <h5 class="dashboard-card-title">Quitados Hoje</h5>
+            <p class="dashboard-card-value mb-0">R$ {{ quitados_hoje|floatformat:2 }}</p>
           </div>
-          <i class="fas fa-check-circle fa-4x opacity-75"></i>
+          <i class="fas fa-check-circle dashboard-card-icon"></i>
         </div>
       </div>
     </div>
 
     <!-- Card Negociados Hoje (abre modal) -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow border-0 card-equal" style="background:linear-gradient(135deg,#34495e,#2c3e50);" data-bs-toggle="modal" data-bs-target="#modalNegociadosHoje">
-        <div class="card-body text-white d-flex flex-column justify-content-between align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
+      <div class="dashboard-card card-negociados-hoje" data-bs-toggle="modal" data-bs-target="#modalNegociadosHoje">
+        <div class="dashboard-card-body">
           <div>
-            <h5 class="fw-bold">Negociados Hoje</h5>
-            <p class="fs-2 mb-0">R$ {{ negociados_hoje|floatformat:2 }}</p>
+            <h5 class="dashboard-card-title">Negociados Hoje</h5>
+            <p class="dashboard-card-value mb-0">R$ {{ negociados_hoje|floatformat:2 }}</p>
           </div>
-          <i class="fas fa-handshake fa-4x opacity-75"></i>
+          <i class="fas fa-handshake dashboard-card-icon"></i>
         </div>
       </div>
     </div>
 
     <!-- Card INICIAR COBRANÇAS -->
-    <div class="col-lg-3 col-md-6">
-      <a href="{% url 'iniciar_cobrancas' %}" class="text-decoration-none">
-        <div class="card shadow border-0 card-equal" style="background:linear-gradient(135deg,#dc3545,#c82333); cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-          <div class="card-body text-white d-flex flex-column justify-content-between align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
+      <a href="{% url 'iniciar_cobrancas' %}" class="dashboard-card-link">
+        <div class="dashboard-card card-iniciar-cobrancas">
+          <div class="dashboard-card-body">
             <div>
-              <h5 class="fw-bold">INICIAR COBRANÇAS</h5>
-              <p class="fs-4 mb-0">Parcelas Prioritárias</p>
+              <h5 class="dashboard-card-title">Iniciar Cobranças</h5>
+              <p class="dashboard-card-subtitle mb-0" style="font-size: 0.95rem; font-weight: 600;">Parcelas Prioritárias</p>
             </div>
-            <i class="fas fa-play-circle fa-4x opacity-75"></i>
+            <i class="fas fa-play-circle dashboard-card-icon"></i>
           </div>
         </div>
       </a>
     </div>
   </div>
 
-  <!-- Contagem animada -->
+  <!-- Contagem animada melhorada -->
   <script>
   document.addEventListener("DOMContentLoaded", function () {
+    // Função para formatar número com separador de milhares
+    function formatNumber(num) {
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
     document.querySelectorAll('.count-number').forEach(el => {
-      const target = +el.dataset.count;
-      if (isNaN(target)) return;
-      const step = Math.max(1, Math.ceil(target/100));
-      const tick = () => {
-        const cur = +el.textContent || 0;
-        if (cur < target) { el.textContent = Math.min(cur+step, target); setTimeout(tick,20); }
-        else { el.textContent = target; }
+      const target = parseInt(el.dataset.count) || 0;
+      if (isNaN(target) || target === 0) {
+        el.textContent = '0';
+        return;
+      }
+      
+      // Animação suave com easing
+      const duration = 1500; // 1.5 segundos
+      const startTime = Date.now();
+      const startValue = 0;
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function (ease-out)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const current = Math.floor(startValue + (target - startValue) * easeOut);
+        
+        el.textContent = formatNumber(current);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          el.textContent = formatNumber(target);
+        }
       };
-      tick();
+      
+      animate();
     });
   });
   </script>
