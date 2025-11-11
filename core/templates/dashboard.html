@@ -300,80 +300,19 @@
     margin-right: 0.5rem;
   }
 
-  /* ========== TABELAS RESPONSIVAS - CARDS EM MOBILE ========== */
+  /* ========== TABELAS RESPONSIVAS COM SCROLL ========== */
   .table-wrapper {
     margin-bottom: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  /* Cards para mobile */
-  .table-cards {
-    display: none;
-  }
-
-  @media (max-width: 767px) {
-    .table-cards {
-      display: block;
-    }
-    
-    .table-wrapper {
-      display: none;
-    }
-
-    .table-card {
-      background: white;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
-      padding: 0.6rem;
-      margin-bottom: 0.6rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      transition: all 0.15s ease;
-    }
-
-    .table-card:hover {
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .table-card-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 0.3rem 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .table-card-row:last-child {
-      border-bottom: none;
-    }
-
-    .table-card-label {
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: #6c757d;
-      text-transform: uppercase;
-      letter-spacing: 0.2px;
-      min-width: 35%;
-    }
-
-    .table-card-value {
-      font-size: 0.7rem;
-      color: #212529;
-      text-align: right;
-      flex: 1;
-      word-break: break-word;
-    }
-
-    .table-card-actions {
-      display: flex;
-      gap: 0.4rem;
-      margin-top: 0.4rem;
-      padding-top: 0.4rem;
-      border-top: 1px solid #f0f0f0;
-    }
-  }
-
-  /* Tabela desktop - COMPACTA */
+  /* Tabela - COMPACTA E RESPONSIVA */
   .dashboard-table {
     width: 100%;
+    min-width: 700px;
     font-size: 0.7rem;
     margin: 0;
     background: white;
@@ -381,11 +320,18 @@
     border-spacing: 0;
     border-radius: 4px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (min-width: 576px) {
+    .dashboard-table {
+      min-width: 800px;
+      font-size: 0.72rem;
+    }
   }
 
   @media (min-width: 768px) {
     .dashboard-table {
+      min-width: 100%;
       font-size: 0.75rem;
     }
   }
@@ -817,73 +763,7 @@
       de {{ titulos_proximos_paginated.paginator.count }} títulos
     </div>
     
-    <!-- Cards Mobile -->
-    <div class="table-cards">
-      {% for titulo in titulos_proximos_paginated %}
-      <div class="table-card">
-        <div class="table-card-row">
-          <span class="table-card-label">Devedor</span>
-          <span class="table-card-value"><b>{{ titulo.devedor_nome|default:'Não informado' }}</b></span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Empresa</span>
-          <span class="table-card-value"><b>{{ titulo.empresa_nome|default:'Não informado' }}</b></span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Título</span>
-          <span class="table-card-value"><b>{{ titulo.parcela_numero }}</b></span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Vencimento</span>
-          <span class="table-card-value"><b>{{ titulo.data_vencimento|date:"d/m/Y" }}</b></span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Valor</span>
-          <span class="table-card-value"><b>R$ {{ titulo.valor|floatformat:2 }}</b></span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Status</span>
-          <span class="table-card-value">
-            {% if titulo.status == 'PENDENTE' %}
-              <span class="badge bg-warning">Pendente</span>
-            {% elif titulo.status == 'PAGO' %}
-              <span class="badge bg-success">Pago</span>
-            {% elif titulo.status == 'NEGOCIADO' %}
-              <span class="badge bg-info">Negociado</span>
-            {% else %}
-              <span class="badge bg-secondary">{{ titulo.status }}</span>
-            {% endif %}
-          </span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Dias Restantes</span>
-          <span class="table-card-value">
-            {% if titulo.dias_para_vencimento == 0 %}
-              <span class="badge bg-danger">Hoje</span>
-            {% elif titulo.dias_para_vencimento == 1 %}
-              <span class="badge bg-warning">1 dia</span>
-            {% else %}
-              <span class="badge bg-info">{{ titulo.dias_para_vencimento }} dias</span>
-            {% endif %}
-          </span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Operador</span>
-          <span class="table-card-value"><b>{{ titulo.operador|default:'Não atribuído' }}</b></span>
-        </div>
-        <div class="table-card-actions">
-          <a href="{% url 'detalhes_devedor' titulo.id %}" target="_blank" class="action-btn btn btn-info">
-            <i class="fas fa-eye"></i> Ver
-          </a>
-          <button class="action-btn btn btn-success finalizar-btn" data-id="{{ titulo.id }}">
-            <i class="fas fa-check"></i> Finalizar
-          </button>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <!-- Tabela Desktop -->
+    <!-- Tabela -->
     <div class="table-wrapper">
       <table class="table table-hover dashboard-table">
         <thead>
@@ -1010,51 +890,7 @@
       de {{ negociados_paginated.paginator.count }}
     </div>
 
-    <!-- Cards Mobile -->
-    <div class="table-cards">
-      {% for titulo in negociados_paginated %}
-      <div class="table-card">
-        <div class="table-card-row">
-          <span class="table-card-label">Devedor</span>
-          <span class="table-card-value">{{ titulo.devedor_nome }}</span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Empresa</span>
-          <span class="table-card-value">{{ titulo.empresa_nome }}</span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Operador</span>
-          <span class="table-card-value">{{ titulo.operador }}</span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Vencimento</span>
-          <span class="table-card-value">{{ titulo.data_vencimento|date:"d/m/Y" }}</span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Valor</span>
-          <span class="table-card-value">R$ {{ titulo.valor_total|floatformat:2 }}</span>
-        </div>
-        <div class="table-card-row">
-          <span class="table-card-label">Status</span>
-          <span class="table-card-value"><span class="badge bg-warning text-dark">Negociado em atraso</span></span>
-        </div>
-        <div class="table-card-actions">
-          <a href="{% url 'detalhes_devedor' titulo.id %}" target="_blank" class="action-btn btn btn-info">
-            <i class="fas fa-eye"></i> Ver
-          </a>
-          <button class="action-btn btn btn-success finalizar-btn" data-id="{{ titulo.id }}">
-            <i class="fas fa-check"></i> Finalizar
-          </button>
-        </div>
-      </div>
-      {% empty %}
-      <div class="table-card">
-        <div class="text-center text-muted p-3">Nenhum título negociado em atraso encontrado.</div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <!-- Tabela Desktop -->
+    <!-- Tabela -->
     <div class="table-wrapper">
       <table class="table table-striped dashboard-table">
         <thead>
