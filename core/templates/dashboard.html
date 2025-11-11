@@ -8,6 +8,11 @@
     margin-bottom: 2rem;
   }
 
+  /* Reduzir espaçamento entre cards */
+  .dashboard-cards .row {
+    --bs-gutter-y: 1rem;
+  }
+
   /* Cards base */
   .dashboard-card {
     height: 100%;
@@ -95,12 +100,12 @@
 
   /* Body do card */
   .dashboard-card-body {
-    padding: 1.75rem;
+    padding: 1.25rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
-    min-height: 180px;
+    min-height: 140px;
     position: relative;
     z-index: 1;
     color: white;
@@ -108,23 +113,23 @@
 
   /* Título do card */
   .dashboard-card-title {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.75rem;
+    letter-spacing: 0.3px;
+    margin-bottom: 0.5rem;
     opacity: 0.95;
-    line-height: 1.3;
+    line-height: 1.2;
   }
 
   /* Valor/Número principal */
   .dashboard-card-value {
-    font-size: 2.25rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 0.5rem;
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: nowrap;
@@ -132,19 +137,19 @@
 
   /* Subtítulo/Descrição */
   .dashboard-card-subtitle {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     opacity: 0.85;
     font-weight: 500;
-    margin-top: 0.25rem;
+    margin-top: 0.15rem;
   }
 
   /* Ícone */
   .dashboard-card-icon {
-    font-size: 3.5rem;
+    font-size: 2.5rem;
     opacity: 0.25;
     position: absolute;
-    bottom: 1rem;
-    right: 1rem;
+    bottom: 0.75rem;
+    right: 0.75rem;
     transition: all 0.3s ease;
   }
 
@@ -156,67 +161,71 @@
   /* Layout responsivo */
   @media (max-width: 1199px) {
     .dashboard-card-value {
-      font-size: 2rem;
+      font-size: 1.6rem;
     }
     .dashboard-card-icon {
-      font-size: 3rem;
+      font-size: 2.25rem;
     }
   }
 
   @media (max-width: 991px) {
     .dashboard-card-body {
-      min-height: 160px;
-      padding: 1.5rem;
+      min-height: 130px;
+      padding: 1.1rem;
     }
     .dashboard-card-value {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
     }
     .dashboard-card-icon {
-      font-size: 2.75rem;
+      font-size: 2rem;
     }
   }
 
   @media (max-width: 767px) {
     .dashboard-card-body {
-      min-height: 140px;
-      padding: 1.25rem;
+      min-height: 120px;
+      padding: 1rem;
     }
     .dashboard-card-value {
-      font-size: 1.5rem;
+      font-size: 1.35rem;
     }
     .dashboard-card-title {
-      font-size: 0.85rem;
+      font-size: 0.75rem;
     }
     .dashboard-card-icon {
-      font-size: 2.5rem;
-      bottom: 0.75rem;
-      right: 0.75rem;
+      font-size: 1.85rem;
+      bottom: 0.6rem;
+      right: 0.6rem;
     }
   }
 
   @media (max-width: 575px) {
     .dashboard-card-body {
-      min-height: 130px;
-      padding: 1rem;
+      min-height: 110px;
+      padding: 0.9rem;
     }
     .dashboard-card-value {
-      font-size: 1.35rem;
+      font-size: 1.2rem;
       line-height: 1.1;
     }
     .dashboard-card-icon {
-      font-size: 2.25rem;
+      font-size: 1.7rem;
     }
     .dashboard-card-title {
-      font-size: 0.8rem;
-      margin-bottom: 0.5rem;
+      font-size: 0.7rem;
+      margin-bottom: 0.4rem;
     }
   }
 
   /* Ajuste para valores monetários muito grandes em telas pequenas */
   @media (max-width: 400px) {
     .dashboard-card-value {
-      font-size: 1.15rem;
+      font-size: 1rem;
       white-space: normal;
+    }
+    .dashboard-card-body {
+      min-height: 100px;
+      padding: 0.75rem;
     }
   }
 
@@ -234,7 +243,7 @@
 </style>
 
 <div class="container mt-4">
-  <div class="row g-4 dashboard-cards">
+  <div class="row g-3 dashboard-cards">
     <!-- Card Pendentes -->
     <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
       <div class="dashboard-card card-pendentes">
@@ -334,7 +343,7 @@
           <div class="dashboard-card-body">
             <div>
               <h5 class="dashboard-card-title">Iniciar Cobranças</h5>
-              <p class="dashboard-card-subtitle mb-0" style="font-size: 0.95rem; font-weight: 600;">Parcelas Prioritárias</p>
+              <p class="dashboard-card-subtitle mb-0" style="font-size: 0.75rem; font-weight: 600;">Parcelas Prioritárias</p>
             </div>
             <i class="fas fa-play-circle dashboard-card-icon"></i>
           </div>
