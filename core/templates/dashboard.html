@@ -1,41 +1,36 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- CSS Moderno e Responsivo -->
+<!-- CSS Compacto e Totalmente Responsivo -->
 <style>
-  /* Container de cards */
+  /* Reset e base */
   .dashboard-cards {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
 
-  /* Reduzir espaçamento entre cards */
   .dashboard-cards .row {
-    --bs-gutter-y: 1rem;
+    --bs-gutter-x: 0.75rem;
+    --bs-gutter-y: 0.75rem;
   }
 
-  /* Cards base */
+  /* Cards base - COMPACTOS */
   .dashboard-card {
     height: 100%;
     border: none;
-    border-radius: 16px;
+    border-radius: 10px;
     overflow: hidden;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
     cursor: pointer;
     background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .dashboard-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
 
-  .dashboard-card:active {
-    transform: translateY(-4px) scale(1.01);
-  }
-
-  /* Overlay decorativo */
   .dashboard-card::before {
     content: '';
     position: absolute;
@@ -43,135 +38,88 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
     pointer-events: none;
   }
 
-  /* Padrões de gradiente por card */
-  .card-pendentes {
-    --gradient-start: #1abb9c;
-    --gradient-end: #16a085;
-  }
+  /* Gradientes */
+  .card-pendentes { --gradient-start: #1abb9c; --gradient-end: #16a085; }
+  .card-quitados { --gradient-start: #3498db; --gradient-end: #2980b9; }
+  .card-negociados { --gradient-start: #f39c12; --gradient-end: #e67e22; }
+  .card-total-recebido { --gradient-start: #e74c3c; --gradient-end: #c0392b; }
+  .card-negociados-atraso { --gradient-start: #ff6f61; --gradient-end: #d9534f; }
+  .card-quitados-hoje { --gradient-start: #3498db; --gradient-end: #2980b9; }
+  .card-negociados-hoje { --gradient-start: #34495e; --gradient-end: #2c3e50; }
+  .card-iniciar-cobrancas { --gradient-start: #dc3545; --gradient-end: #c82333; }
 
-  .card-quitados {
-    --gradient-start: #3498db;
-    --gradient-end: #2980b9;
-  }
-
-  .card-negociados {
-    --gradient-start: #f39c12;
-    --gradient-end: #e67e22;
-  }
-
-  .card-total-recebido {
-    --gradient-start: #e74c3c;
-    --gradient-end: #c0392b;
-  }
-
-  .card-negociados-atraso {
-    --gradient-start: #ff6f61;
-    --gradient-end: #d9534f;
-  }
-
-  .card-quitados-hoje {
-    --gradient-start: #3498db;
-    --gradient-end: #2980b9;
-  }
-
-  .card-negociados-hoje {
-    --gradient-start: #34495e;
-    --gradient-end: #2c3e50;
-  }
-
-  .card-iniciar-cobrancas {
-    --gradient-start: #dc3545;
-    --gradient-end: #c82333;
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% {
-      box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.3), 0 2px 4px -1px rgba(220, 53, 69, 0.2);
-    }
-    50% {
-      box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.5), 0 2px 4px -1px rgba(220, 53, 69, 0.4);
-    }
-  }
-
-  /* Body do card */
+  /* Body - MUITO COMPACTO */
   .dashboard-card-body {
-    padding: 1.25rem;
+    padding: 0.85rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
-    min-height: 140px;
+    min-height: 100px;
     position: relative;
     z-index: 1;
     color: white;
   }
 
-  /* Título do card */
+  /* Título - PEQUENO */
   .dashboard-card-title {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.2px;
+    margin-bottom: 0.35rem;
     opacity: 0.95;
-    line-height: 1.2;
-  }
-
-  /* Valor/Número principal */
-  .dashboard-card-value {
-    font-size: 1.75rem;
-    font-weight: 700;
     line-height: 1.1;
-    margin-bottom: 0.25rem;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    letter-spacing: -0.3px;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    white-space: nowrap;
   }
 
-  /* Subtítulo/Descrição */
+  /* Valor - COMPACTO */
+  .dashboard-card-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.15rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Subtítulo */
   .dashboard-card-subtitle {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     opacity: 0.85;
     font-weight: 500;
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
+    line-height: 1.1;
   }
 
-  /* Ícone */
+  /* Ícone - PEQUENO */
   .dashboard-card-icon {
-    font-size: 2.5rem;
-    opacity: 0.25;
+    font-size: 1.8rem;
+    opacity: 0.2;
     position: absolute;
-    bottom: 0.75rem;
-    right: 0.75rem;
-    transition: all 0.3s ease;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    transition: all 0.2s ease;
   }
 
   .dashboard-card:hover .dashboard-card-icon {
-    opacity: 0.35;
-    transform: scale(1.1) rotate(5deg);
+    opacity: 0.3;
+    transform: scale(1.05);
   }
 
-  /* Layout responsivo */
-  @media (max-width: 1199px) {
-    .dashboard-card-value {
-      font-size: 1.6rem;
-    }
-    .dashboard-card-icon {
-      font-size: 2.25rem;
-    }
-  }
-
-  @media (max-width: 991px) {
+  /* RESPONSIVIDADE REAL - Mobile First */
+  
+  /* Desktop grande (≥1200px) */
+  @media (min-width: 1200px) {
     .dashboard-card-body {
-      min-height: 130px;
-      padding: 1.1rem;
+      min-height: 110px;
+      padding: 1rem;
     }
     .dashboard-card-value {
       font-size: 1.5rem;
@@ -181,69 +129,110 @@
     }
   }
 
-  @media (max-width: 767px) {
+  /* Desktop (992px - 1199px) */
+  @media (min-width: 992px) and (max-width: 1199px) {
     .dashboard-card-body {
-      min-height: 120px;
-      padding: 1rem;
-    }
-    .dashboard-card-value {
-      font-size: 1.35rem;
-    }
-    .dashboard-card-title {
-      font-size: 0.75rem;
-    }
-    .dashboard-card-icon {
-      font-size: 1.85rem;
-      bottom: 0.6rem;
-      right: 0.6rem;
-    }
-  }
-
-  @media (max-width: 575px) {
-    .dashboard-card-body {
-      min-height: 110px;
+      min-height: 105px;
       padding: 0.9rem;
     }
     .dashboard-card-value {
-      font-size: 1.2rem;
-      line-height: 1.1;
+      font-size: 1.4rem;
+    }
+    .dashboard-card-icon {
+      font-size: 1.9rem;
+    }
+  }
+
+  /* Tablet (768px - 991px) */
+  @media (min-width: 768px) and (max-width: 991px) {
+    .dashboard-card-body {
+      min-height: 100px;
+      padding: 0.85rem;
+    }
+    .dashboard-card-value {
+      font-size: 1.3rem;
+    }
+    .dashboard-card-title {
+      font-size: 0.68rem;
     }
     .dashboard-card-icon {
       font-size: 1.7rem;
     }
+  }
+
+  /* Mobile grande (576px - 767px) */
+  @media (min-width: 576px) and (max-width: 767px) {
+    .dashboard-card-body {
+      min-height: 95px;
+      padding: 0.75rem;
+    }
+    .dashboard-card-value {
+      font-size: 1.2rem;
+    }
     .dashboard-card-title {
-      font-size: 0.7rem;
-      margin-bottom: 0.4rem;
+      font-size: 0.65rem;
+      margin-bottom: 0.3rem;
+    }
+    .dashboard-card-icon {
+      font-size: 1.6rem;
+      bottom: 0.4rem;
+      right: 0.4rem;
     }
   }
 
-  /* Ajuste para valores monetários muito grandes em telas pequenas */
-  @media (max-width: 400px) {
+  /* Mobile pequeno (<576px) */
+  @media (max-width: 575px) {
+    .dashboard-card-body {
+      min-height: 90px;
+      padding: 0.7rem;
+    }
+    .dashboard-card-value {
+      font-size: 1.1rem;
+    }
+    .dashboard-card-title {
+      font-size: 0.6rem;
+      margin-bottom: 0.25rem;
+    }
+    .dashboard-card-subtitle {
+      font-size: 0.6rem;
+    }
+    .dashboard-card-icon {
+      font-size: 1.4rem;
+      bottom: 0.35rem;
+      right: 0.35rem;
+    }
+  }
+
+  /* Mobile muito pequeno (<400px) */
+  @media (max-width: 399px) {
+    .dashboard-card-body {
+      min-height: 85px;
+      padding: 0.6rem;
+    }
     .dashboard-card-value {
       font-size: 1rem;
       white-space: normal;
+      line-height: 1.1;
     }
-    .dashboard-card-body {
-      min-height: 100px;
-      padding: 0.75rem;
+    .dashboard-card-title {
+      font-size: 0.55rem;
+    }
+    .dashboard-card-icon {
+      font-size: 1.2rem;
     }
   }
 
-  /* Link sem decoração */
+  /* Link */
   .dashboard-card-link {
     text-decoration: none;
     color: inherit;
     display: block;
     height: 100%;
   }
-
-  .dashboard-card-link:hover {
-    color: inherit;
-  }
 </style>
 
-<div class="container mt-4">
-  <div class="row g-3 dashboard-cards">
+<div class="container mt-3">
+  <div class="row g-2 dashboard-cards">
     <!-- Card Pendentes -->
     <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12">
       <div class="dashboard-card card-pendentes">
@@ -343,7 +332,7 @@
           <div class="dashboard-card-body">
             <div>
               <h5 class="dashboard-card-title">Iniciar Cobranças</h5>
-              <p class="dashboard-card-subtitle mb-0" style="font-size: 0.75rem; font-weight: 600;">Parcelas Prioritárias</p>
+              <p class="dashboard-card-subtitle mb-0" style="font-size: 0.65rem; font-weight: 600;">Parcelas Prioritárias</p>
             </div>
             <i class="fas fa-play-circle dashboard-card-icon"></i>
           </div>
