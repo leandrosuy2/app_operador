@@ -103,7 +103,7 @@
                 <th style="padding: 5px;">Nome</th>
                 <th style="padding: 5px;">CPF / CNPJ</th>                
                 <th style="padding: 5px;">Empresa</th>
-                <th style="padding: 5px;">Título ID</th>
+                <th style="padding: 5px;">Data Último Acionamento</th>
                 <th style="padding: 5px;">Telefones</th>
                 <th style="padding: 5px;">Status Baixa</th>
                 <th style="padding: 5px;">Ações</th>
@@ -136,12 +136,19 @@
 					</b></td>
                     
                     <td><b>{{ devedor.empresa }}</b></td>
-                    <td><b>{{ devedor.titulo_id }}</b></td>
+                    <td><b>
+                        {% if devedor.ultima_acao %}
+                            {{ devedor.ultima_acao|date:"d/m/Y" }}
+                        {% else %}
+                            <span class="text-muted">Nunca acionado</span>
+                        {% endif %}
+                    </b></td>
                     <td class="text-start">
-                      {% with t1=devedor.telefone1 t2=devedor.telefone2 t3=devedor.telefone3 t4=devedor.telefone4 t5=devedor.telefone5 t6=devedor.telefone6 t7=devedor.telefone7 t8=devedor.telefone8 t9=devedor.telefone9 t10=devedor.telefone10 %}
-                        {% firstof t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 as any %}
+                      {% with tel=devedor.telefone t1=devedor.telefone1 t2=devedor.telefone2 t3=devedor.telefone3 t4=devedor.telefone4 t5=devedor.telefone5 t6=devedor.telefone6 t7=devedor.telefone7 t8=devedor.telefone8 t9=devedor.telefone9 t10=devedor.telefone10 %}
+                        {% firstof tel t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 as any %}
                         {% if any %}
                           <small>
+                            {% if tel %}<span class="badge bg-light text-dark border">{{ tel }}</span>{% endif %}
                             {% if t1 %}<span class="badge bg-light text-dark border">{{ t1 }}</span>{% endif %}
                             {% if t2 %}<span class="badge bg-light text-dark border">{{ t2 }}</span>{% endif %}
                             {% if t3 %}<span class="badge bg-light text-dark border">{{ t3 }}</span>{% endif %}
@@ -207,7 +214,7 @@
                 {% endfor %}
             {% else %}
             <tr>
-                <td colspan="8" class="text-center">Nenhum devedor encontrado.</td>
+                <td colspan="9" class="text-center">Nenhum devedor encontrado.</td>
             </tr>
             {% endif %}
         </tbody>

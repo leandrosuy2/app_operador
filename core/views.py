@@ -1518,7 +1518,8 @@ def listar_devedores(request):
             MAX(CASE WHEN (t.statusBaixa=3 OR t.statusBaixaGeral=3) THEN 1 ELSE 0 END) AS any_negociado,
             MAX(CASE WHEN (t.statusBaixa=2 OR t.statusBaixaGeral=2) THEN 1 ELSE 0 END) AS any_quitado,
             COUNT(*) AS qtd_titulos,
-            MIN(t.id) AS titulo_id_exemplo
+            MIN(t.id) AS titulo_id_exemplo,
+            MAX(t.ultima_acao) AS ultima_acao
         FROM titulo t
         GROUP BY t.devedor_id
     )
@@ -1537,7 +1538,19 @@ def listar_devedores(request):
         d.razao_social,
         COALESCE(spd.qtd_titulos, 0) AS qtd_titulos,
         COALESCE(spd.any_negociado, 0) AS any_negociado,
-        COALESCE(spd.any_quitado, 0) AS any_quitado
+        COALESCE(spd.any_quitado, 0) AS any_quitado,
+        spd.ultima_acao,
+        d.telefone,
+        d.telefone1,
+        d.telefone2,
+        d.telefone3,
+        d.telefone4,
+        d.telefone5,
+        d.telefone6,
+        d.telefone7,
+        d.telefone8,
+        d.telefone9,
+        d.telefone10
     FROM devedores d
     JOIN core_empresa e           ON d.empresa_id = e.id
     LEFT JOIN status_por_devedor spd ON spd.devedor_id = d.id
@@ -1591,7 +1604,9 @@ def listar_devedores(request):
         rows = cur.fetchall()
 
     IDX = {
-        "STATUS":0,"ID":1,"NOME":2,"CPF":3,"CNPJ":4,"EMP":5,"TIT":6,"NF":7,"RAZAO":8,"QTD":9
+        "STATUS":0,"ID":1,"NOME":2,"CPF":3,"CNPJ":4,"EMP":5,"TIT":6,"NF":7,"RAZAO":8,"QTD":9,
+        "ULTIMA_ACAO":10,"TEL":11,"TEL1":12,"TEL2":13,"TEL3":14,"TEL4":15,"TEL5":16,
+        "TEL6":17,"TEL7":18,"TEL8":19,"TEL9":20,"TEL10":21
     }
     devedores = [{
         "id": row[IDX["ID"]],
@@ -1604,6 +1619,18 @@ def listar_devedores(request):
         "empresa": row[IDX["EMP"]],
         "quantidade_titulos": row[IDX["QTD"]],
         "status_baixa": {0:"Pendente",2:"Quitado",3:"Negociado"}.get(row[IDX["STATUS"]], "Pendente"),
+        "ultima_acao": row[IDX["ULTIMA_ACAO"]],
+        "telefone": row[IDX["TEL"]],
+        "telefone1": row[IDX["TEL1"]],
+        "telefone2": row[IDX["TEL2"]],
+        "telefone3": row[IDX["TEL3"]],
+        "telefone4": row[IDX["TEL4"]],
+        "telefone5": row[IDX["TEL5"]],
+        "telefone6": row[IDX["TEL6"]],
+        "telefone7": row[IDX["TEL7"]],
+        "telefone8": row[IDX["TEL8"]],
+        "telefone9": row[IDX["TEL9"]],
+        "telefone10": row[IDX["TEL10"]],
     } for row in rows]
 
     from django.core.paginator import Paginator
