@@ -329,6 +329,40 @@ class MensagemWhatsapp(models.Model):
 
     def __str__(self):
         return f"{self.categoria} - {self.mensagem[:50]}"
+
+
+class WhatsappMensagem(models.Model):
+    TEMPLATE_CHOICES = [
+        ('padrao', 'Padrão'),
+        ('vencidas', 'Vencidas'),
+        ('a_vencer', 'A vencer'),
+        ('vencendo_hoje', 'Vencendo hoje'),
+        ('quebra', 'Quebra de acordo'),
+        ('proposta', 'Proposta de acordo'),
+        ('personalizada', 'Personalizada'),
+    ]
+    CONTEXTO_CHOICES = [
+        ('salvo', 'Texto salvo no modal'),
+        ('enviado', 'Texto enviado manualmente'),
+    ]
+
+    devedor = models.ForeignKey(Devedor, on_delete=models.CASCADE, related_name='whatsapps')
+    empresa = models.ForeignKey(Empresa, on_delete=models.SET_NULL, null=True, blank=True, related_name='whatsapps')
+    operador = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='whatsapps')
+    telefone = models.CharField(max_length=20, blank=True)
+    template = models.CharField(max_length=30, choices=TEMPLATE_CHOICES, default='personalizada')
+    template_label = models.CharField(max_length=60, blank=True)
+    contexto = models.CharField(max_length=15, choices=CONTEXTO_CHOICES, default='salvo')
+    mensagem = models.TextField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'core_whatsapp_mensagem'
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f"{self.get_template_display()} - {self.devedor}"
         
 class TabelaRemuneracao(models.Model):
     nome = models.CharField(max_length=255)

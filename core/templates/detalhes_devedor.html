@@ -431,8 +431,10 @@
   <div id="ctx"
        data-user="{{ request.user.get_full_name|default:request.user.first_name|default:request.user.username|escapejs }}"
        data-devedor="{{ devedor.nome|default_if_none:''|escapejs }}"
+       data-devedor-id="{{ devedor.id }}"
        data-empresa-fantasia="{{ empresa.nome_fantasia|default_if_none:''|escapejs }}"
        data-empresa-razao="{{ empresa.razao_social|default_if_none:''|escapejs }}"
+       data-empresa-id="{{ empresa.id|default_if_none:'' }}"
        data-chave-pix="{{ empresa.banco|default_if_none:''|escapejs }}">
   </div>
 
@@ -1985,6 +1987,7 @@
   // true: recarrega a página após salvar o follow-up
   // false: só insere no "Histórico" (ul#followupList) sem reload
   const HARD_RELOAD_AFTER_POST = false;
+  const URL_REGISTRO_WHATS = "{% url 'registrar_envio_whatsapp' devedor.id %}";
 
   /* ================== MENSAGENS ================== */
   const MSGS_WHATS = {
@@ -2059,8 +2062,10 @@
     const texto = textoEditorAtual();
     MSGS_WHATS_EDITADAS[ESCOLHA_ATUAL] = texto;
     marcarEdicaoPendente(false);
-    mostrarFeedbackMsg('Alterações salvas para este envio.');
     atualizarPreviewMsg(texto);
+    registrarLogWhatsapp({ texto, tipo: ESCOLHA_ATUAL, status: 'salvo' })
+      .then(() => mostrarFeedbackMsg('Alterações salvas para este envio.', 'ok'))
+      .catch(() => mostrarFeedbackMsg('Salvo localmente, mas não foi possível registrar no servidor.', 'erro'));
   }
 
   document.getElementById('msgTemplateEditor')?.addEventListener('input', (event) => {
@@ -2068,6 +2073,32 @@
     mostrarFeedbackMsg('');
     atualizarPreviewMsg(event.target.value);
   });
+
+  function registrarLogWhatsapp({ texto, numero = '', tipo, status = 'salvo' }){
+    const payload = {
+      mensagem: texto,
+      numero,
+      template: tipo || ESCOLHA_ATUAL,
+      template_label: LABEL_TEMPLATE[tipo || ESCOLHA_ATUAL] || tipo || 'Personalizada',
+      status
+    };
+    if (!payload.mensagem?.trim() || !URL_REGISTRO_WHATS) return Promise.resolve();
+    const csrf = getCookie('csrftoken');
+    return fetch(URL_REGISTRO_WHATS, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrf
+      },
+      body: JSON.stringify(payload)
+    }).then(resp => {
+      if (!resp.ok) throw new Error('Erro ao registrar mensagem');
+      return resp.json();
+    }).catch(err => {
+      console.error('Falha ao registrar mensagem personalizada do WhatsApp', err);
+      throw err;
+    });
+  }
 
   /* ================== UI DO MODAL ================== */
   function escolherMsg(tipo){
@@ -2302,6 +2333,7 @@
     }
     const texto = textoAtual;
     const tipo  = LABEL_TEMPLATE[ESCOLHA_ATUAL] || ESCOLHA_ATUAL;
+    registrarLogWhatsapp({ texto, numero, tipo: ESCOLHA_ATUAL, status: 'enviado' }).catch(() => {});
 
     // Abre a aba já no clique (evita bloqueio de popup)
     const win = window.open('', '_blank');

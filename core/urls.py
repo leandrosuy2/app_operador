@@ -66,6 +66,7 @@ urlpatterns = [
     path('acordos/<int:titulo_id>/gerar_contrato/', views.gerar_contrato, name='gerar_contrato'),
     path('adicionar-follow-up/<int:devedor_id>/', views.adicionar_follow_up, name='adicionar_follow_up'),
     path('listar-follow-ups/<int:devedor_id>/', views.listar_follow_ups, name='listar_follow_ups'),
+    path('devedores/<int:devedor_id>/registrar-whatsapp/', views.registrar_envio_whatsapp, name='registrar_envio_whatsapp'),
     path('logs/', views.listar_logs, name='listar_logs'),    
     path('parcelamento/<int:parcela_id>/anexar-comprovante/', views.anexar_comprovante, name='anexar_comprovante'),
     path('baixar_comprovante/<int:parcelamento_id>/', views.baixar_comprovante, name='baixar_comprovante'),

@@ -10,6 +10,7 @@ from .models import (
     Parcelamento,
     UserAccessLog,
     MensagemWhatsapp,
+    WhatsappMensagem,
     TabelaRemuneracao,
     TabelaRemuneracaoLista,
     EmailEnvio,
@@ -5018,6 +5019,45 @@ def adicionar_follow_up(request, devedor_id):
         messages.error(request, "Método inválido.")
         return redirect("lista_devedores")
 
+
+@login_required
+@require_POST
+def registrar_envio_whatsapp(request, devedor_id):
+    devedor = get_object_or_404(Devedor, id=devedor_id)
+    try:
+        data = json.loads(request.body or "{}")
+    except (TypeError, ValueError):
+        data = request.POST
+
+    mensagem = (data.get("mensagem") or "").strip()
+    if not mensagem:
+        return JsonResponse({"success": False, "error": "Mensagem obrigatória."}, status=400)
+
+    template = (data.get("template") or "personalizada").strip()
+    template_choices = {choice[0] for choice in WhatsappMensagem.TEMPLATE_CHOICES}
+    if template not in template_choices:
+        template = "personalizada"
+
+    status = (data.get("status") or "salvo").strip()
+    contexto_choices = {choice[0] for choice in WhatsappMensagem.CONTEXTO_CHOICES}
+    if status not in contexto_choices:
+        status = "salvo"
+
+    numero = (data.get("numero") or "").strip()
+    template_label = (data.get("template_label") or "").strip() or dict(WhatsappMensagem.TEMPLATE_CHOICES).get(template, template.title())
+
+    registro = WhatsappMensagem.objects.create(
+        devedor=devedor,
+        empresa=getattr(devedor, "empresa", None),
+        operador=request.user if request.user.is_authenticated else None,
+        telefone=numero,
+        template=template,
+        template_label=template_label[:60],
+        contexto=status,
+        mensagem=mensagem,
+    )
+
+    return JsonResponse({"success": True, "registro_id": registro.id})
 
 def listar_logs(request):
     # Obtém todos os logs de acesso

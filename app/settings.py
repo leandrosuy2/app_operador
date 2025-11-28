@@ -98,7 +98,7 @@ DATABASES = {
         'NAME': 'app',
         'USER': 'advassessoria',
         'PASSWORD': 'Parceria@2025!',
-        'HOST': 'localhost',
+        'HOST': '191.252.205.97',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',
