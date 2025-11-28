@@ -4617,14 +4617,19 @@ def detalhes_devedor(request, titulo_id):
         "quebra": msg_quebra,
     }
     whats_templates_salvos = {}
+    templates_qs = WhatsappTemplate.objects.filter(empresa__isnull=True)
     if empresa:
-        for registro in WhatsappTemplate.objects.filter(empresa=empresa):
-            whats_templates_salvos[registro.template] = _apply(
-                registro.mensagem,
-                placeholder_maps.get(registro.template, base_data),
-            )
-            if registro.template in mensagens_por_template:
-                mensagens_por_template[registro.template] = whats_templates_salvos[registro.template]
+        templates_qs = templates_qs.union(
+            WhatsappTemplate.objects.filter(empresa=empresa)
+        )
+    for registro in templates_qs.order_by('empresa_id', 'template'):
+        mensagem_renderizada = _apply(
+            registro.mensagem,
+            placeholder_maps.get(registro.template, base_data),
+        )
+        whats_templates_salvos[registro.template] = mensagem_renderizada
+        if registro.template in mensagens_por_template:
+            mensagens_por_template[registro.template] = mensagem_renderizada
 
     msg_vencidas = mensagens_por_template["vencidas"]
     msg_a_vencer = mensagens_por_template["a_vencer"]
@@ -4695,7 +4700,7 @@ def detalhes_devedor(request, titulo_id):
         "today": hoje,
         "obito_info": obito_info,
         "whats_templates_salvos": json.dumps(whats_templates_salvos, ensure_ascii=False),
-        "url_salvar_template_whats": reverse("salvar_template_whatsapp", args=[empresa.id]) if empresa else "",
+        "url_salvar_template_whats": reverse("salvar_template_whatsapp"),
         "whats_placeholder_map": json.dumps(placeholder_maps, ensure_ascii=False),
     }
     return render(request, "detalhes_devedor.html", context)
@@ -5055,8 +5060,7 @@ def adicionar_follow_up(request, devedor_id):
 
 @login_required
 @require_POST
-def salvar_template_whatsapp(request, empresa_id):
-    empresa = get_object_or_404(Empresa, id=empresa_id)
+def salvar_template_whatsapp(request):
     try:
         data = json.loads(request.body or "{}")
     except (TypeError, ValueError):
@@ -5064,6 +5068,10 @@ def salvar_template_whatsapp(request, empresa_id):
 
     mensagem = (data.get("mensagem") or "").strip()
     template = (data.get("template") or "").strip()
+    empresa_id = data.get("empresa_id")
+    empresa = None
+    if empresa_id:
+        empresa = get_object_or_404(Empresa, id=empresa_id)
 
     if not mensagem:
         return JsonResponse({"success": False, "error": "Mensagem obrigatória."}, status=400)

@@ -367,7 +367,11 @@ class WhatsappMensagem(models.Model):
 
 class WhatsappTemplate(models.Model):
     empresa = models.ForeignKey(
-        Empresa, on_delete=models.CASCADE, related_name='whatsapp_templates'
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name='whatsapp_templates',
+        null=True,
+        blank=True,
     )
     template = models.CharField(
         max_length=30,
@@ -386,7 +390,9 @@ class WhatsappTemplate(models.Model):
         ordering = ['template']
 
     def __str__(self):
-        return f"{self.empresa} - {self.get_template_display()}"
+        if self.empresa:
+            return f"{self.empresa} - {self.get_template_display()}"
+        return f"GLOBAL - {self.get_template_display()}"
         
 class TabelaRemuneracao(models.Model):
     nome = models.CharField(max_length=255)
