@@ -1944,12 +1944,27 @@
         <button type="button" class="btn btn-outline-success" data-opt="proposta" onclick="escolherMsg('proposta')">Proposta de Acordo</button>
       </div>
 
+      <div class="mb-3">
+        <label for="msgTemplateEditor" class="form-label fw-semibold">Editar mensagem selecionada</label>
+        <textarea id="msgTemplateEditor" class="form-control" rows="8" placeholder="Ajuste o texto antes do envio."></textarea>
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 gap-2">
+          <small class="text-muted mb-0">As alterações valem somente para este envio e não alteram o template original.</small>
+          <div class="d-flex align-items-center gap-2">
+            <span id="msgEditorStatus" class="badge bg-secondary">Original</span>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="salvarEdicaoTemplate()">
+              <i class="bi bi-save"></i> Salvar alterações
+            </button>
+          </div>
+        </div>
+        <div id="msgEditorFeedback" class="form-text d-none"></div>
+      </div>
+
       <div class="accordion" id="accMsg">
         <div class="accordion-item">
           <h2 class="accordion-header" id="headMsg">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMsg">Ver mensagem selecionada</button>
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMsg">Pré-visualização do envio</button>
           </h2>
-          <div id="collapseMsg" class="accordion-collapse collapse">
+          <div id="collapseMsg" class="accordion-collapse collapse show">
             <div class="accordion-body">
               <pre id="previewMsgText" class="mb-0" style="white-space:pre-wrap;"></pre>
             </div>
@@ -1982,19 +1997,86 @@
   };
   const LABEL_TEMPLATE = { padrao:'Padrão', vencidas:'Vencidas', a_vencer:'A vencer', vencendo_hoje:'Vencendo hoje', quebra:'Quebra de acordo', proposta:'Proposta de Acordo' };
   let ESCOLHA_ATUAL = 'padrao';
+  const MSGS_WHATS_EDITADAS = {};
+  let EDICAO_PENDENTE = false;
+
+  function getEditorTemplate(){
+    return document.getElementById('msgTemplateEditor');
+  }
+  function textoEditorAtual(){
+    const editor = getEditorTemplate();
+    if (editor) return editor.value || '';
+    return MSGS_WHATS_EDITADAS[ESCOLHA_ATUAL] ?? MSGS_WHATS[ESCOLHA_ATUAL] ?? '';
+  }
+  function atualizarPreviewMsg(forcedText){
+    const texto = forcedText !== undefined ? forcedText : textoEditorAtual();
+    const el = document.getElementById('previewMsgText');
+    if (el) el.textContent = texto || '';
+  }
+  function atualizarStatusEditor(){
+    const badge = document.getElementById('msgEditorStatus');
+    if (!badge) return;
+    if (EDICAO_PENDENTE){
+      badge.textContent = 'Alterações não salvas';
+      badge.className = 'badge bg-warning text-dark';
+    } else if (MSGS_WHATS_EDITADAS[ESCOLHA_ATUAL]){
+      badge.textContent = 'Personalizado';
+      badge.className = 'badge bg-info text-dark';
+    } else {
+      badge.textContent = 'Original';
+      badge.className = 'badge bg-secondary';
+    }
+  }
+  function marcarEdicaoPendente(flag=true){
+    EDICAO_PENDENTE = !!flag;
+    atualizarStatusEditor();
+  }
+  function mostrarFeedbackMsg(texto, tipo='ok'){
+    const feedback = document.getElementById('msgEditorFeedback');
+    if (!feedback) return;
+    if (!texto){
+      feedback.classList.add('d-none');
+      feedback.textContent = '';
+      return;
+    }
+    feedback.textContent = texto;
+    feedback.classList.remove('d-none');
+    feedback.classList.remove('text-success', 'text-danger');
+    if (tipo === 'ok') feedback.classList.add('text-success');
+    else if (tipo === 'erro') feedback.classList.add('text-danger');
+  }
+  function carregarTemplateNoEditor(tipo){
+    const editor = getEditorTemplate();
+    if (editor){
+      const custom = Object.prototype.hasOwnProperty.call(MSGS_WHATS_EDITADAS, tipo) ? MSGS_WHATS_EDITADAS[tipo] : undefined;
+      editor.value = (custom ?? MSGS_WHATS[tipo] ?? '');
+    }
+    marcarEdicaoPendente(false);
+    mostrarFeedbackMsg('');
+    atualizarPreviewMsg();
+  }
+  function salvarEdicaoTemplate(){
+    const texto = textoEditorAtual();
+    MSGS_WHATS_EDITADAS[ESCOLHA_ATUAL] = texto;
+    marcarEdicaoPendente(false);
+    mostrarFeedbackMsg('Alterações salvas para este envio.');
+    atualizarPreviewMsg(texto);
+  }
+
+  document.getElementById('msgTemplateEditor')?.addEventListener('input', (event) => {
+    marcarEdicaoPendente(true);
+    mostrarFeedbackMsg('');
+    atualizarPreviewMsg(event.target.value);
+  });
 
   /* ================== UI DO MODAL ================== */
-  function atualizarPreviewMsg(){
-    const el = document.getElementById('previewMsgText');
-    if (el) el.textContent = MSGS_WHATS[ESCOLHA_ATUAL] || '';
-  }
   function escolherMsg(tipo){
     if (tipo === 'vencendo_hoje') atualizarMsgVencendoHoje();
     ESCOLHA_ATUAL = tipo;
     document.querySelectorAll('[data-opt]').forEach(b=>b.classList.remove('active'));
     const bt = document.querySelector(`[data-opt="${tipo}"]`);
     if (bt) bt.classList.add('active');
-    atualizarPreviewMsg();
+    carregarTemplateNoEditor(tipo);
   }
   function abrirModalWhats(btn){
     const numero = btn?.getAttribute('data-whats') || '';
@@ -2046,6 +2128,11 @@
     const totalHoje = somaVencendoHoje();
     const valorTxt = formatBRL(totalHoje);
     MSGS_WHATS.vencendo_hoje = `Bom dia\n\nComunicamos que consta valores a serem pagos hoje para o credor ${credor}.\n\nValor da parcela: ${valorTxt}`;
+    if (ESCOLHA_ATUAL === 'vencendo_hoje' && !MSGS_WHATS_EDITADAS.vencendo_hoje && !EDICAO_PENDENTE){
+      carregarTemplateNoEditor('vencendo_hoje');
+    } else if (ESCOLHA_ATUAL === 'vencendo_hoje') {
+      atualizarPreviewMsg();
+    }
   }
 
   /* ================== HELPERS ================== */
@@ -2208,7 +2295,12 @@
     const numero = sel ? sel.value : '';
     if (!numero){ alert('Selecione um número válido.'); return; }
 
-    const texto = MSGS_WHATS[ESCOLHA_ATUAL] || '';
+    const textoAtual = textoEditorAtual();
+    if (!textoAtual.trim()){
+      alert('Escreva a mensagem antes de enviar.');
+      return;
+    }
+    const texto = textoAtual;
     const tipo  = LABEL_TEMPLATE[ESCOLHA_ATUAL] || ESCOLHA_ATUAL;
 
     // Abre a aba já no clique (evita bloqueio de popup)
