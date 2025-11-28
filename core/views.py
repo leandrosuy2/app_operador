@@ -4597,10 +4597,18 @@ def detalhes_devedor(request, titulo_id):
         "%ValorTotalParcelas%": _format_brl(total_vencidas),   # COM JUROS
     }
 
-    msg_vencidas = _apply(tpl_vencidas, data_vencidas)
-    msg_a_vencer = _apply(tpl_a_vencer, base_data)
-    msg_padrao   = _apply(tpl_padrao,   base_data)
-    msg_quebra   = _apply(tpl_quebra,   {**base_data, "%ValorTotalParcelas%": _format_brl(total_quebra)})
+    placeholder_maps = {
+        "padrao": dict(base_data),
+        "a_vencer": dict(base_data),
+        "vencidas": {**base_data, "%QtdeParcelas%": str(qtde_vencidas), "%ListaVencimentosParcelas%": (lista_vencidas or "-"), "%ValorTotalParcelas%": _format_brl(total_vencidas)},
+        "quebra": {**base_data, "%ValorTotalParcelas%": _format_brl(total_quebra)},
+        "proposta": dict(base_data),
+    }
+
+    msg_vencidas = _apply(tpl_vencidas, placeholder_maps["vencidas"])
+    msg_a_vencer = _apply(tpl_a_vencer, placeholder_maps["a_vencer"])
+    msg_padrao   = _apply(tpl_padrao,   placeholder_maps["padrao"])
+    msg_quebra   = _apply(tpl_quebra,   placeholder_maps["quebra"])
 
     mensagens_por_template = {
         "vencidas": msg_vencidas,
@@ -4611,9 +4619,12 @@ def detalhes_devedor(request, titulo_id):
     whats_templates_salvos = {}
     if empresa:
         for registro in WhatsappTemplate.objects.filter(empresa=empresa):
-            whats_templates_salvos[registro.template] = registro.mensagem
+            whats_templates_salvos[registro.template] = _apply(
+                registro.mensagem,
+                placeholder_maps.get(registro.template, base_data),
+            )
             if registro.template in mensagens_por_template:
-                mensagens_por_template[registro.template] = registro.mensagem
+                mensagens_por_template[registro.template] = whats_templates_salvos[registro.template]
 
     msg_vencidas = mensagens_por_template["vencidas"]
     msg_a_vencer = mensagens_por_template["a_vencer"]
@@ -4685,6 +4696,7 @@ def detalhes_devedor(request, titulo_id):
         "obito_info": obito_info,
         "whats_templates_salvos": json.dumps(whats_templates_salvos, ensure_ascii=False),
         "url_salvar_template_whats": reverse("salvar_template_whatsapp", args=[empresa.id]) if empresa else "",
+        "whats_placeholder_map": json.dumps(placeholder_maps, ensure_ascii=False),
     }
     return render(request, "detalhes_devedor.html", context)
 

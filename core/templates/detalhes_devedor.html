@@ -2002,6 +2002,7 @@
   let ESCOLHA_ATUAL = 'padrao';
   const MSGS_WHATS_EDITADAS = {};
   const TEMPLATES_SALVOS = JSON.parse('{{ whats_templates_salvos|default:"{}"|escapejs }}' || '{}');
+  const PLACEHOLDER_MAP = JSON.parse('{{ whats_placeholder_map|default:"{}"|escapejs }}' || '{}');
   let EDICAO_PENDENTE = false;
 
   function getEditorTemplate(){
@@ -2069,7 +2070,8 @@
       mostrarFeedbackMsg('Não foi possível identificar o credor para salvar o template.', 'erro');
       return;
     }
-    salvarTemplateWhats({ template: ESCOLHA_ATUAL, mensagem: texto })
+    const normalizado = substituirValoresPorPlaceholders(texto, ESCOLHA_ATUAL);
+    salvarTemplateWhats({ template: ESCOLHA_ATUAL, mensagem: normalizado })
       .then(() => {
         MSGS_WHATS[ESCOLHA_ATUAL] = texto;
         TEMPLATES_SALVOS[ESCOLHA_ATUAL] = texto;
@@ -2101,6 +2103,16 @@
       if (!resp.ok) throw new Error('Erro ao salvar template');
       return resp.json();
     });
+  }
+
+  function substituirValoresPorPlaceholders(texto, template){
+    const mapa = PLACEHOLDER_MAP[template] || {};
+    const entries = Object.entries(mapa).filter(([, valor]) => (valor || '').length > 0);
+    entries.sort((a, b) => (b[1] || '').length - (a[1] || '').length);
+    return entries.reduce((acc, [placeholder, valor]) => {
+      const escaped = valor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return acc.replace(new RegExp(escaped, 'g'), placeholder);
+    }, texto);
   }
 
   /* ================== UI DO MODAL ================== */
