@@ -1987,7 +1987,7 @@
   // true: recarrega a página após salvar o follow-up
   // false: só insere no "Histórico" (ul#followupList) sem reload
   const HARD_RELOAD_AFTER_POST = false;
-  const URL_REGISTRO_WHATS = "{% url 'registrar_envio_whatsapp' devedor.id %}";
+  const URL_SALVAR_TEMPLATE = "{{ url_salvar_template_whats|default:'' }}";
 
   /* ================== MENSAGENS ================== */
   const MSGS_WHATS = {
@@ -2000,7 +2000,8 @@
   };
   const LABEL_TEMPLATE = { padrao:'Padrão', vencidas:'Vencidas', a_vencer:'A vencer', vencendo_hoje:'Vencendo hoje', quebra:'Quebra de acordo', proposta:'Proposta de Acordo' };
   let ESCOLHA_ATUAL = 'padrao';
-  const MSGS_WHATS_EDITADAS = JSON.parse('{{ whats_msgs_personalizadas|default:"{}"|escapejs }}' || '{}');
+  const MSGS_WHATS_EDITADAS = {};
+  const TEMPLATES_SALVOS = JSON.parse('{{ whats_templates_salvos|default:"{}"|escapejs }}' || '{}');
   let EDICAO_PENDENTE = false;
 
   function getEditorTemplate(){
@@ -2022,7 +2023,7 @@
     if (EDICAO_PENDENTE){
       badge.textContent = 'Alterações não salvas';
       badge.className = 'badge bg-warning text-dark';
-    } else if (MSGS_WHATS_EDITADAS[ESCOLHA_ATUAL]){
+    } else if (TEMPLATES_SALVOS[ESCOLHA_ATUAL]){
       badge.textContent = 'Personalizado';
       badge.className = 'badge bg-info text-dark';
     } else {
@@ -2059,44 +2060,46 @@
     atualizarPreviewMsg();
   }
   function salvarEdicaoTemplate(){
-    const texto = textoEditorAtual();
-    MSGS_WHATS_EDITADAS[ESCOLHA_ATUAL] = texto;
-    marcarEdicaoPendente(false);
-    atualizarPreviewMsg(texto);
-    registrarLogWhatsapp({ texto, tipo: ESCOLHA_ATUAL, status: 'salvo' })
-      .then(() => mostrarFeedbackMsg('Alterações salvas para este envio.', 'ok'))
-      .catch(() => mostrarFeedbackMsg('Salvo localmente, mas não foi possível registrar no servidor.', 'erro'));
+    const texto = textoEditorAtual().trim();
+    if (!texto){
+      mostrarFeedbackMsg('Escreva a mensagem antes de salvar.', 'erro');
+      return;
+    }
+    if (!URL_SALVAR_TEMPLATE){
+      mostrarFeedbackMsg('Não foi possível identificar o credor para salvar o template.', 'erro');
+      return;
+    }
+    salvarTemplateWhats({ template: ESCOLHA_ATUAL, mensagem: texto })
+      .then(() => {
+        MSGS_WHATS[ESCOLHA_ATUAL] = texto;
+        TEMPLATES_SALVOS[ESCOLHA_ATUAL] = texto;
+        delete MSGS_WHATS_EDITADAS[ESCOLHA_ATUAL];
+        marcarEdicaoPendente(false);
+        atualizarPreviewMsg(texto);
+        mostrarFeedbackMsg('Template salvo para todos os envios deste cliente.', 'ok');
+      })
+      .catch(() => mostrarFeedbackMsg('Falha ao salvar o template. Tente novamente.', 'erro'));
   }
 
   document.getElementById('msgTemplateEditor')?.addEventListener('input', (event) => {
     marcarEdicaoPendente(true);
     mostrarFeedbackMsg('');
+    MSGS_WHATS_EDITADAS[ESCOLHA_ATUAL] = event.target.value;
     atualizarPreviewMsg(event.target.value);
   });
 
-  function registrarLogWhatsapp({ texto, numero = '', tipo, status = 'salvo' }){
-    const payload = {
-      mensagem: texto,
-      numero,
-      template: tipo || ESCOLHA_ATUAL,
-      template_label: LABEL_TEMPLATE[tipo || ESCOLHA_ATUAL] || tipo || 'Personalizada',
-      status
-    };
-    if (!payload.mensagem?.trim() || !URL_REGISTRO_WHATS) return Promise.resolve();
+  function salvarTemplateWhats({ template, mensagem }){
     const csrf = getCookie('csrftoken');
-    return fetch(URL_REGISTRO_WHATS, {
+    return fetch(URL_SALVAR_TEMPLATE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRFToken': csrf
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ template, mensagem })
     }).then(resp => {
-      if (!resp.ok) throw new Error('Erro ao registrar mensagem');
+      if (!resp.ok) throw new Error('Erro ao salvar template');
       return resp.json();
-    }).catch(err => {
-      console.error('Falha ao registrar mensagem personalizada do WhatsApp', err);
-      throw err;
     });
   }
 
@@ -2333,7 +2336,6 @@
     }
     const texto = textoAtual;
     const tipo  = LABEL_TEMPLATE[ESCOLHA_ATUAL] || ESCOLHA_ATUAL;
-    registrarLogWhatsapp({ texto, numero, tipo: ESCOLHA_ATUAL, status: 'enviado' }).catch(() => {});
 
     // Abre a aba já no clique (evita bloqueio de popup)
     const win = window.open('', '_blank');

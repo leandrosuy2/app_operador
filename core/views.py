@@ -11,6 +11,7 @@ from .models import (
     UserAccessLog,
     MensagemWhatsapp,
     WhatsappMensagem,
+    WhatsappTemplate,
     TabelaRemuneracao,
     TabelaRemuneracaoLista,
     EmailEnvio,
@@ -4601,17 +4602,23 @@ def detalhes_devedor(request, titulo_id):
     msg_padrao   = _apply(tpl_padrao,   base_data)
     msg_quebra   = _apply(tpl_quebra,   {**base_data, "%ValorTotalParcelas%": _format_brl(total_quebra)})
 
-    # ----- Mensagens personalizadas salvas por template
-    personalizados_qs = (
-        WhatsappMensagem.objects
-        .filter(devedor=devedor, contexto='salvo')
-        .order_by('template', '-criado_em')
-    )
-    personalizados_por_template = {}
-    for registro in personalizados_qs:
-        if registro.template not in personalizados_por_template:
-            personalizados_por_template[registro.template] = registro.mensagem
-    whats_msgs_personalizadas = json.dumps(personalizados_por_template, ensure_ascii=False)
+    mensagens_por_template = {
+        "vencidas": msg_vencidas,
+        "a_vencer": msg_a_vencer,
+        "padrao": msg_padrao,
+        "quebra": msg_quebra,
+    }
+    whats_templates_salvos = {}
+    if empresa:
+        for registro in WhatsappTemplate.objects.filter(empresa=empresa):
+            whats_templates_salvos[registro.template] = registro.mensagem
+            if registro.template in mensagens_por_template:
+                mensagens_por_template[registro.template] = registro.mensagem
+
+    msg_vencidas = mensagens_por_template["vencidas"]
+    msg_a_vencer = mensagens_por_template["a_vencer"]
+    msg_padrao = mensagens_por_template["padrao"]
+    msg_quebra = mensagens_por_template["quebra"]
 
     # ----- Óbito (opcional, nunca derruba a página)
     obito_info = {}
@@ -4676,7 +4683,8 @@ def detalhes_devedor(request, titulo_id):
         "forma_pagamento_map": forma_pagamento_map,
         "today": hoje,
         "obito_info": obito_info,
-        "whats_msgs_personalizadas": whats_msgs_personalizadas,
+        "whats_templates_salvos": json.dumps(whats_templates_salvos, ensure_ascii=False),
+        "url_salvar_template_whats": reverse("salvar_template_whatsapp", args=[empresa.id]) if empresa else "",
     }
     return render(request, "detalhes_devedor.html", context)
 
@@ -5035,42 +5043,40 @@ def adicionar_follow_up(request, devedor_id):
 
 @login_required
 @require_POST
-def registrar_envio_whatsapp(request, devedor_id):
-    devedor = get_object_or_404(Devedor, id=devedor_id)
+def salvar_template_whatsapp(request, empresa_id):
+    empresa = get_object_or_404(Empresa, id=empresa_id)
     try:
         data = json.loads(request.body or "{}")
     except (TypeError, ValueError):
-        data = request.POST
+        return JsonResponse({"success": False, "error": "Dados inválidos."}, status=400)
 
     mensagem = (data.get("mensagem") or "").strip()
+    template = (data.get("template") or "").strip()
+
     if not mensagem:
         return JsonResponse({"success": False, "error": "Mensagem obrigatória."}, status=400)
 
-    template = (data.get("template") or "personalizada").strip()
-    template_choices = {choice[0] for choice in WhatsappMensagem.TEMPLATE_CHOICES}
+    template_choices = dict(WhatsappTemplate._meta.get_field("template").choices)
     if template not in template_choices:
-        template = "personalizada"
+        return JsonResponse({"success": False, "error": "Template inválido."}, status=400)
 
-    status = (data.get("status") or "salvo").strip()
-    contexto_choices = {choice[0] for choice in WhatsappMensagem.CONTEXTO_CHOICES}
-    if status not in contexto_choices:
-        status = "salvo"
-
-    numero = (data.get("numero") or "").strip()
-    template_label = (data.get("template_label") or "").strip() or dict(WhatsappMensagem.TEMPLATE_CHOICES).get(template, template.title())
-
-    registro = WhatsappMensagem.objects.create(
-        devedor=devedor,
-        empresa=getattr(devedor, "empresa", None),
-        operador=request.user if request.user.is_authenticated else None,
-        telefone=numero,
+    registro, _ = WhatsappTemplate.objects.update_or_create(
+        empresa=empresa,
         template=template,
-        template_label=template_label[:60],
-        contexto=status,
-        mensagem=mensagem,
+        defaults={
+            "mensagem": mensagem,
+            "atualizado_por": request.user if request.user.is_authenticated else None,
+        },
     )
 
-    return JsonResponse({"success": True, "registro_id": registro.id})
+    return JsonResponse(
+        {
+            "success": True,
+            "template": registro.template,
+            "mensagem": registro.mensagem,
+            "label": template_choices[registro.template],
+        }
+    )
 
 def listar_logs(request):
     # Obtém todos os logs de acesso

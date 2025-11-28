@@ -363,6 +363,30 @@ class WhatsappMensagem(models.Model):
 
     def __str__(self):
         return f"{self.get_template_display()} - {self.devedor}"
+
+
+class WhatsappTemplate(models.Model):
+    empresa = models.ForeignKey(
+        Empresa, on_delete=models.CASCADE, related_name='whatsapp_templates'
+    )
+    template = models.CharField(
+        max_length=30,
+        choices=WhatsappMensagem.TEMPLATE_CHOICES
+    )
+    mensagem = models.TextField()
+    atualizado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='whatsapp_templates'
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'core_whatsapp_template'
+        unique_together = ('empresa', 'template')
+        ordering = ['template']
+
+    def __str__(self):
+        return f"{self.empresa} - {self.get_template_display()}"
         
 class TabelaRemuneracao(models.Model):
     nome = models.CharField(max_length=255)
