@@ -4601,6 +4601,18 @@ def detalhes_devedor(request, titulo_id):
     msg_padrao   = _apply(tpl_padrao,   base_data)
     msg_quebra   = _apply(tpl_quebra,   {**base_data, "%ValorTotalParcelas%": _format_brl(total_quebra)})
 
+    # ----- Mensagens personalizadas salvas por template
+    personalizados_qs = (
+        WhatsappMensagem.objects
+        .filter(devedor=devedor, contexto='salvo')
+        .order_by('template', '-criado_em')
+    )
+    personalizados_por_template = {}
+    for registro in personalizados_qs:
+        if registro.template not in personalizados_por_template:
+            personalizados_por_template[registro.template] = registro.mensagem
+    whats_msgs_personalizadas = json.dumps(personalizados_por_template, ensure_ascii=False)
+
     # ----- Óbito (opcional, nunca derruba a página)
     obito_info = {}
     if devedor.cpf:
@@ -4664,6 +4676,7 @@ def detalhes_devedor(request, titulo_id):
         "forma_pagamento_map": forma_pagamento_map,
         "today": hoje,
         "obito_info": obito_info,
+        "whats_msgs_personalizadas": whats_msgs_personalizadas,
     }
     return render(request, "detalhes_devedor.html", context)
 

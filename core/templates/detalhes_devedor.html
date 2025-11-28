@@ -2000,7 +2000,7 @@
   };
   const LABEL_TEMPLATE = { padrao:'Padrão', vencidas:'Vencidas', a_vencer:'A vencer', vencendo_hoje:'Vencendo hoje', quebra:'Quebra de acordo', proposta:'Proposta de Acordo' };
   let ESCOLHA_ATUAL = 'padrao';
-  const MSGS_WHATS_EDITADAS = {};
+  const MSGS_WHATS_EDITADAS = JSON.parse('{{ whats_msgs_personalizadas|default:"{}"|escapejs }}' || '{}');
   let EDICAO_PENDENTE = false;
 
   function getEditorTemplate(){
