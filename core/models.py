@@ -168,7 +168,9 @@ class Titulo(models.Model):
     renegociado = models.BooleanField(default=False, verbose_name="Renegociado")
     @property
     def valor_com_juros(self):
-        return self.valor + self.juros
+        valor = self.valor or 0
+        juros = self.juros or 0
+        return valor + juros
     
 
     class Meta:
